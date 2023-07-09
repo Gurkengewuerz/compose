@@ -1,0 +1,12 @@
+tags*
+config/
+db/
+.env
+acme.json
+assets
+data
+db.env
+**/.DS_Store
+backups
+keycloak/themes
+keycloak/providers

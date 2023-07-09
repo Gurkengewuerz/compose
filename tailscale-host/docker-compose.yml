@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+
+  client:
+    image: tailscale/tailscale:latest
+    volumes:
+      - ./data/tailscale:/var/lib
+      - /dev/net/tun:/dev/net/tun
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    network_mode: host
+    command: tailscaled
+    restart: unless-stopped

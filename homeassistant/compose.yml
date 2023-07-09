@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+
+  homeassistant:
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - ./data/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    network_mode: host
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "5"

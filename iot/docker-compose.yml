@@ -1,0 +1,69 @@
+version: "3"
+
+services:
+
+  influx:
+    image: influxdb:alpine
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=$INFLUXDB_INIT_USERNAME
+      - DOCKER_INFLUXDB_INIT_PASSWORD=$INFLUXDB_INIT_PASSWORD
+      - DOCKER_INFLUXDB_INIT_ORG=$INFLUXDB_INIT_ORG
+      - DOCKER_INFLUXDB_INIT_BUCKET=default
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./data/influx/data:/var/lib/influxdb2
+      - ./data/influx/config:/etc/influxdb2
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    logging:
+      # limit logs retained on host to 25MB
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "50"
+
+  mqtt:
+    image: gurken2108/mqtt-server:latest
+    environment:
+      PATH_AUTH_FILE: "/config/auth.json"
+      #PATH_PERSISTENCE_FILE: "/config/storage"
+    restart: unless-stopped
+    volumes:
+      - ./data/mqtt:/config/
+    ports:
+      - "1882:1882"
+      - "1883:1883"
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+
+#  mosquitto:
+#    image: eclipse-mosquitto:latest
+#    restart: unless-stopped
+#    environment:
+#      - TZ=Europe/Berlin
+#      - PUID=1000
+#      - PGID=1000
+#    ports:
+#      - "9001:9001"
+#      - "1883:1883"
+#    volumes:
+#      - ./data/mosquitto/data:/mosquitto/data
+#      - ./data/mosquitto/config:/mosquitto/config
+#      - ./data/mosquitto/log:/mosquitto/log
+#    logging:
+#      # limit logs retained on host to 25MB
+#      driver: "json-file"
+#      options:
+#        max-size: "500k"
+#        max-file: "50"

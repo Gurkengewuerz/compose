@@ -1,0 +1,17 @@
+version: "3.7"
+
+services:
+
+  mrss-bot:
+    restart: unless-stopped
+    image: synzen/monitorss
+    environment:
+      - DRSS_START=bot
+      - DRSS_BOT_TOKEN=$BOT_TOKEN
+      - DRSS_DATABASE_URI=/db
+      - DRSS_BOT_ACTIVITYTYPE=$BOT_ACTIVITYTYPE
+      - DRSS_BOT_ACTIVITYNAME=$BOT_ACTIVITYNAME
+      - DRSS_BOT_OWNERIDS=$BOT_OWNERIDS
+    volumes:
+      - ./data/drss:/db
+

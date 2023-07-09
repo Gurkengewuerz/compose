@@ -1,0 +1,42 @@
+version: "3.7"
+
+services:
+  vaultwarden:
+    image: ghcr.io/dani-garcia/vaultwarden:latest
+    restart: unless-stopped
+    environment:
+      #- TZ=Europe/Berlin
+      - PUID=1000
+      - PGID=1000
+      - DATABASE_URL=$DATABASE_URL
+      - WEBSOCKET_ENABLED=true
+      - RUST_BACKTRACE=1
+      - REQUIRE_DEVICE_EMAIL=true
+      - SIGNUPS_ALLOWED=$SIGNUPS_ALLOWED
+      - SIGNUPS_VERIFY=$SIGNUPS_VERIFY
+      - SIGNUPS_DOMAINS_WHITELIST=$SIGNUPS_DOMAINS_WHITELIST
+      - ADMIN_TOKEN=$ADMIN_TOKEN
+      - DISABLE_ADMIN_TOKEN=$DISABLE_ADMIN_TOKEN
+      - INVITATIONS_ALLOWED=$INVITATIONS_ALLOWED
+      - INVITATION_ORG_NAME=$INVITATION_ORG_NAME
+      - DOMAIN=$DOMAIN
+      - SMTP_HOST=$SMTP_HOST
+      - SMTP_FROM=$SMTP_FROM
+      - SMTP_FROM_NAME=$SMTP_FROM_NAME
+      - SMTP_PORT=$SMTP_PORT
+      - SMTP_SECURITY=$SMTP_SECURITY
+      - SMTP_USERNAME=$SMTP_USERNAME
+      - SMTP_PASSWORD=$SMTP_PASSWORD
+      - PUSH_ENABLED=$PUSH_ENABLED
+      - PUSH_INSTALLATION_ID=$PUSH_INSTALLATION_ID
+      - PUSH_INSTALLATION_KEY=$PUSH_INSTALLATION_KEY
+    ports:
+      - "3020:80"
+    logging:
+      # limit logs retained on host to 25MB
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "50"
+    volumes:
+      - ./data:/data
