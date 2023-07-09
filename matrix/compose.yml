@@ -1,0 +1,31 @@
+version: "3"
+
+services:
+
+  synapse:
+    image: matrixdotorg/synapse:v1.87.0rc1
+    restart: unless-stopped
+    environment:
+      - UID=1000
+      - GID=1000
+    volumes:
+      - ./data/synapse:/data
+    networks: [traefik]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.synapse.entrypoints=websecure"
+      - "traefik.http.routers.synapse.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.synapse.service=synapse-srv"
+      - "traefik.http.services.synapse-srv.loadbalancer.server.port=8008"
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/synapse"
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+
+networks:
+  traefik:
+    external: true

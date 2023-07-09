@@ -1,0 +1,79 @@
+version: "3.7"
+
+services:
+
+  db:
+    image: mariadb
+    restart: unless-stopped
+    networks:
+      - nextcloud
+    command: --transaction-isolation=READ-COMMITTED --log-bin=ROW --innodb_read_only_compressed=OF
+    environment:
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+      - MYSQL_PASSWORD=$DB_PASSWORD
+      - MYSQL_DATABASE=$DB_DB
+      - MYSQL_USER=$DB_USER
+      - MYSQL_INITDB_SKIP_TZINFO=1
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./data/db:/var/lib/mysql
+
+  nextcloud:
+    image: nextcloud
+    restart: unless-stopped
+    networks:
+      - traefik
+      - nextcloud
+    depends_on:
+      - redis
+      - db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      - "traefik.http.routers.nextcloud.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud.middlewares=nextcloud,nextcloud_redirect"
+      - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+
+      - "traefik.http.middlewares.nextcloud.headers.stsSeconds=155520011"
+      - "traefik.http.middlewares.nextcloud.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.nextcloud.headers.stsPreload=true"
+      - "traefik.http.middlewares.nextcloud_redirect.redirectregex.regex=/.well-known/(card|cal)dav"
+      - "traefik.http.middlewares.nextcloud_redirect.redirectregex.replacement=/remote.php/dav/"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_HOST_PASSWORD=$REDIS_HOST_PASSWORD 
+
+      - NEXTCLOUD_TRUSTED_DOMAINS=$VIRTUAL_HOST
+      - TRUSTED_PROXIES=$TRUSTED_PROXIES
+    volumes:
+      - ./data/nextcloud:/var/www/html
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    command: redis-server --save 20 1 --loglevel warning --requirepass $REDIS_HOST_PASSWORD
+    environment:
+      - REDIS_HOST_PASSWORD=$REDIS_HOST_PASSWORD
+    networks:
+      - nextcloud
+
+  nextcloud-cron:
+    image: nextcloud
+    restart: unless-stopped
+    entrypoint: /cron.sh
+    networks:
+      - nextcloud
+      - redis
+    depends_on:
+      - db
+    volumes:
+      - ./data/nextcloud:/var/www/html
+
+networks:
+  traefik:
+    external: true
+  nextcloud:
+

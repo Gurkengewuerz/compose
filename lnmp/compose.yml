@@ -1,0 +1,73 @@
+version: "3"
+
+services:
+  web:
+    image: nginx:alpine
+    volumes:
+      - ./data/etc/nginx/:/etc/nginx/conf.d/
+      - ./data/web:/var/www/html
+    restart: unless-stopped
+    depends_on:
+      - php
+      - db
+    networks: [traefik, lnmp]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.lnmp.entrypoints=websecure"
+      - "traefik.http.routers.lnmp.rule=HOST(`$VIRTUAL_HOST`) || HOST(`www.$VIRTUAL_HOST`)"
+      - "traefik.http.routers.lnmp.tls=true"
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/etc/nginx,./data/web"
+      - "backup.exclude=*/downloads/*,*/pma/*,*/ts3wi/*"
+
+  php:
+    image: chialab/php:8.1-fpm
+    restart: unless-stopped
+    networks: [lnmp]
+    volumes:
+      - ./data/web:/var/www/html
+
+  php7:
+    image: chialab/php:7.4-fpm
+    restart: unless-stopped
+    networks: [lnmp]
+    volumes:
+      - ./data/web:/var/www/html
+
+  db:
+    image: mariadb:10.9
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
+      MYSQL_DATABASE: default
+    volumes:
+      - ./data/db:/var/lib/mysql
+    networks: [lnmp]
+
+  backup:
+    image: fradelg/mysql-cron-backup
+    depends_on:
+      - db
+    volumes:
+      - ./data/db-backup:/backup
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=root
+      - MYSQL_PASS=$DB_ROOT_PASSWORD
+      - MAX_BACKUPS=7
+      - INIT_BACKUP=1
+      - CRON_TIME=0 3 * * *
+      - USE_PLAIN_SQL=1
+    restart: unless-stopped
+    networks: [lnmp]
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/db-backup"
+
+networks:
+  lnmp:
+  traefik:
+    external: true

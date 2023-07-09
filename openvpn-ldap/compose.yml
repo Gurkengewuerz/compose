@@ -1,0 +1,35 @@
+version: "3"
+
+services:
+  openvpn:
+    image: wheelybird/openvpn-ldap-otp:latest
+    ports:
+      - "1194:1194/udp"
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    networks: [ldap]
+    volumes:
+      - ./data/conf:/etc/openvpn
+    environment:
+      - OVPN_SERVER_CN=$OVPN_SERVER_CN
+      - LDAP_URI=ldaps://samba
+      - LDAP_ENCRYPT_CONNECTION=oon
+      - LDAP_TLS_VALIDATE_CERT=false
+      - DEBUG=false
+      - OVPN_VERBOSITY=3
+      - LDAP_LOGIN_ATTRIBUTE=sAMAccountName
+      - LDAP_FILTER=(&(objectClass=user)(memberOf=CN=vpn,CN=Users,$LDAP_BASE_DN))
+      - ACTIVE_DIRECTORY_COMPAT_MODE=false
+      - OVPN_NETWORK=10.8.0.0 255.255.255.0
+      - LDAP_BASE_DN=$LDAP_BASE_DN
+      - LDAP_BIND_USER_DN=cn=Administrator,cn=Users,$LDAP_BASE_DN
+      - LDAP_BIND_USER_PASS=$LDAP_BIND_USER_PASS
+      - OVPN_DNS_SERVERS=1.1.1.1
+      - OVPN_REGISTER_DNS=true
+      - KEY_LENGTH=4096
+
+networks:
+  ldap:
+    external: true
+

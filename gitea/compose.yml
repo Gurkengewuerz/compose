@@ -1,0 +1,69 @@
+version: "3"
+
+services:
+  server:
+    image: gitea/gitea:1.19
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+    restart: always
+    networks:
+      - gitea
+      - traefik
+    volumes:
+      - ./data/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "222:22"
+    depends_on:
+      - db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      - "traefik.http.routers.gitea.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.gitea.service=gitea-srv"
+      - "traefik.http.services.gitea-srv.loadbalancer.server.port=3000"
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/gitea"
+
+  db:
+    image: mariadb:10.9
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=gitea
+      - MYSQL_USER=gitea
+      - MYSQL_PASSWORD=gitea
+      - MYSQL_DATABASE=gitea
+    networks:
+      - gitea
+    volumes:
+      - ./data/db:/var/lib/mysql
+
+  backup:
+    image: fradelg/mysql-cron-backup
+    depends_on:
+      - db
+    volumes:
+      - ./data/db-backup:/backup
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=root
+      - MYSQL_PASS=gitea
+      - MAX_BACKUPS=7
+      - INIT_BACKUP=1
+      - CRON_TIME=0 3 * * *
+      - USE_PLAIN_SQL=1
+    restart: unless-stopped
+    networks: [gitea]
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/db-backup"
+
+networks:
+  gitea:
+  traefik:
+    external: true

@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+
+  shoutrrrapi:
+    image: ghcr.io/gurkengewuerz/shoutrrr-api:develop
+    container_name: shoutrrr-api
+    volumes:
+      - "./data/config.yml:/app/config.yml:ro"
+    restart: unless-stopped
+    networks: [traefik, notify]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.shoutrrr.entrypoints=websecure"
+      - "traefik.http.routers.shoutrrr.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.shoutrrr.service=shoutrrr-srv"
+      - "traefik.http.services.shoutrrr-srv.loadbalancer.server.port=3000"
+      #- "com.centurylinklabs.watchtower.enable=true"
+
+networks:
+  traefik:
+    external: true
+  notify:
+    external: true

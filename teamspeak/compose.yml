@@ -1,0 +1,64 @@
+version: "3"
+
+services:
+  teamspeak:
+    image: teamspeak:3.13
+    restart: unless-stopped
+    networks: [ts]
+    ports:
+      - "9987:9987/udp"
+      - "9999:9999/udp"
+      - "30033:30033"
+    environment:
+      TS3SERVER_DB_PLUGIN: ts3db_mariadb
+      TS3SERVER_DB_SQLCREATEPATH: create_mariadb
+      TS3SERVER_DB_HOST: db
+      TS3SERVER_DB_PORT: 3306
+      TS3SERVER_DB_USER: root
+      TS3SERVER_DB_PASSWORD: $DB_ROOT_PASSWORD
+      TS3SERVER_DB_NAME: teamspeak
+      TS3SERVER_DB_WAITUNTILREADY: 30
+      TS3SERVER_QUERY_PROTOCOLS: ssh
+      TS3SERVER_LICENSE: accept
+    volumes:
+      - ./data/teamspeak:/var/ts3server
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/teamspeak"
+      - "backup.exclude=*/files/*,*/logs/*"
+
+  db:
+    image: mariadb:10.9
+    restart: unless-stopped
+    networks: [ts]
+    environment:
+      MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
+      MYSQL_DATABASE: teamspeak
+    volumes:
+      - ./data/db:/var/lib/mysql
+
+
+  backup:
+    image: fradelg/mysql-cron-backup
+    depends_on:
+      - db
+    volumes:
+      - ./data/db-backup:/backup
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=root
+      - MYSQL_PASS=$DB_ROOT_PASSWORD
+      - MAX_BACKUPS=7
+      - INIT_BACKUP=1
+      - CRON_TIME=0 3 * * *
+      - USE_PLAIN_SQL=1
+    restart: unless-stopped
+    networks: [ts]
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/db-backup"
+
+networks:
+  ts:

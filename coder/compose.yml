@@ -1,0 +1,27 @@
+version: "3.7"
+
+services:
+
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=$TZ
+      - PASSWORD=$PASSWORD
+      - SUDO_PASSWORD=$SUDO_PASSWORD
+    volumes:
+      - ./data/coder/config:/config
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.coder.entrypoints=websecure"
+      - "traefik.http.routers.coder.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.coder.service=coder-srv"
+      - "traefik.http.services.coder-srv.loadbalancer.server.port=8443"
+    networks: [traefik]
+
+networks:
+  traefik:
+    external: true

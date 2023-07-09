@@ -1,0 +1,61 @@
+version: '3'
+
+services:
+
+  # API Key:
+  # docker-compose exec headscale headscale apikeys create --expiration 90d
+  headscale:
+    image: headscale/headscale:latest
+    volumes:
+      - ./data/headscale/config:/etc/headscale
+      - ./data/headscale/data:/var/lib/headscale
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+    ports:
+      - "3478:3478/udp"
+    command: headscale serve
+    restart: unless-stopped
+    networks: [traefik]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.headscale.entrypoints=websecure"
+      - "traefik.http.routers.headscale.rule=(Host(`$VIRTUAL_HOST`) || Host(`$VIRTUAL_HOST_ALT`))"
+      - "traefik.http.routers.headscale.service=headscale-srv"
+      - "traefik.http.services.headscale-srv.loadbalancer.server.port=8080"
+
+  headscale-webui:
+    image: ghcr.io/ifargle/headscale-webui:latest
+    environment:
+      - TZ=$TZ
+      - COLOR=purple
+      - HS_SERVER=http://headscale:8080
+      - DOMAIN_NAME=https://$VIRTUAL_HOST
+      - SCRIPT_NAME=/web
+      - KEY=$UI_SECRET_KEY
+      - AUTH_TYPE=
+      - LOG_LEVEL=info
+    volumes:
+      - ./data/headscale-web/:/data
+      - ./data/headscale/config/:/etc/headscale/:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+    networks: [traefik]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.headscale-web.entrypoints=websecure"
+      - "traefik.http.routers.headscale-web.rule=(HOST(`$VIRTUAL_HOST`) || HOST(`$VIRTUAL_HOST_ALT`)) && PathPrefix(`/web`)"
+      - "traefik.http.routers.headscale-web.service=headscale-web-srv"
+      - "traefik.http.services.headscale-web-srv.loadbalancer.server.port=5000"
+      - "traefik.http.routers.headscale-web.middlewares=headscale-web-auth"
+      - "traefik.http.middlewares.headscale-web-auth.basicauth.users=$UI_USER:$UI_PASSWORD"
+
+networks:
+  traefik:
+    external: true
+

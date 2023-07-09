@@ -1,0 +1,41 @@
+version: "3"
+
+services:
+
+  traefik:
+    image: library/traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 80:80
+      - 443:443
+      - 9999:9999
+    networks:
+      traefik:
+      vpn:
+        ipv4_address: 10.100.101.5
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - ./config:/etc/traefik/config:ro
+      - ./data/certificates:/var/certificates
+    environment:
+      TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_EMAIL: $ACME_MAIL
+    labels:
+      # https://blog.creekorful.org/2020/01/how-to-expose-traefik-2-dashboard-securely-docker-swarm/
+      - "traefik.enable=true"
+      #- "traefik.http.services.traefik.loadbalancer.server.port=8080" # required by swarm but not used.
+      - "traefik.http.routers.traefik.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.traefik.entrypoints=dashboard"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${DASHBOARD_USERNAME}:${DASHBOARD_PASSWORD}"
+
+networks:
+  traefik:
+    external: true
+  vpn:
+    external: true

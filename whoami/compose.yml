@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  whoami:
+    image: containous/whoami:latest
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.routers.whoami.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.whoami.priority=100"
+      - "traefik.http.middlewares.whoami.ipwhitelist.sourcerange=10.100.101.0/24"
+    networks: [traefik]
+
+networks:
+  traefik:
+    external: true
