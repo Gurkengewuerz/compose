@@ -40,19 +40,25 @@ services:
 
 
   backup:
-    image: fradelg/mysql-cron-backup
+    image: tiredofit/db-backup
     depends_on:
       - db
     volumes:
       - ./data/db-backup:/backup
     environment:
-      - MYSQL_HOST=db
-      - MYSQL_USER=root
-      - MYSQL_PASS=$DB_ROOT_PASSWORD
-      - MAX_BACKUPS=7
-      - INIT_BACKUP=1
-      - CRON_TIME=0 3 * * *
-      - USE_PLAIN_SQL=1
+      - TIMEZONE=UTC
+      - DB_TYPE=mariadb
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASS=$DB_ROOT_PASSWORD
+      - DB_NAME=teamspeak
+      - COMPRESSION=NONE
+      - ENABLE_CHECKSUM=FALSE
+      - CHECKSUM=SHA1
+      - DB_DUMP_BEGIN=0315
+      - DB_DUMP_FREQ=1440
+      - DB_CLEANUP_TIME=10080
+      - CREATE_LATEST_SYMLINK=TRUE
     restart: unless-stopped
     networks: [ts]
     labels:
