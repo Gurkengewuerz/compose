@@ -14,8 +14,6 @@ services:
       - 9999:9999
     networks:
       traefik:
-      vpn:
-        ipv4_address: 10.100.101.5
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -36,6 +34,4 @@ services:
 
 networks:
   traefik:
-    external: true
-  vpn:
     external: true
