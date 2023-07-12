@@ -8,6 +8,8 @@ services:
     restart: $RESTART_POLICY
     volumes:
       - "${DATA_DIR}/redis:/data"
+    sysctls:
+      - vm.overcommit_memory=1
     depends_on:
       - resolver
     dns:
@@ -112,6 +114,9 @@ services:
       # Web UI
       - "traefik.http.routers.mailu.rule=Host(`$HOSTNAMES`)"
       - "traefik.http.routers.mailu.entrypoints=websecure"
+      - "traefik.http.routers.mailu.tls=true"
+      - "traefik.http.routers.mailu.tls.domains[0].main=$HOSTNAMES"
+      - "traefik.http.routers.mailu.tls.domains[0].sans=$ADDITIONAL_SANS"
       - "traefik.http.routers.mailu.service=mailu-svc"
       # Autoconfig
       - "traefik.http.routers.mailu-autoconfig.rule=HostRegexp(`{host:(autodiscover|autoconfig).+}`)"
