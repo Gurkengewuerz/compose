@@ -1,0 +1,105 @@
+version: "3"
+
+services:
+
+  backend:
+    image: reg.mc8051.de/mc8051/postmaster-website-backend:latest
+    restart: $RESTART_POLICY
+    networks: [postmaster, traefik]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+    depends_on:
+      - database
+    environment:
+      CMS_URL: $CMS_URL
+      CMS_PATH: $CMS_PATH
+      APP_KEYS: $BACKEND_APP_KEYS
+      API_TOKEN_SALT: $BACKEND_API_TOKEN_SALT
+      ADMIN_JWT_SECRET: $BACKEND_ADMIN_JWT_SECRET
+      TRANSFER_TOKEN_SALT: $BACKEND_TRANSFER_TOKEN_SALT
+      JWT_SECRET: $BACKEND_JWT_SECRET
+
+      SMTP_HOST: $BACKEND_SMTP_HOST
+      SMTP_PORT: $BACKEND_SMTP_PORT
+      SMTP_USERNAME: $BACKEND_SMTP_USERNAME
+      SMTP_PASSWORD: $BACKEND_SMTP_PASSWORD
+
+      FORMS_CAPTCHA_PROVIDER: recaptcha
+      FORMS_CAPTCHA_SECRET: $RECAPTCHA_SECRET
+      FORMS_SUBJECT: $BACKEND_FORMS_SUBJECT
+
+      HOST: 0.0.0.0
+      PORT: 1337
+
+      DATABASE_CLIENT: mysql2
+      DATABASE_HOST: database
+      DATABASE_PORT: 3306
+      DATABASE_NAME: strapi
+      DATABASE_USERNAME: strapi
+      DATABASE_PASSWORD: strapi
+      DATABASE_SSL: false
+
+      STRAPI_DISABLE_UPDATE_NOTIFICATION: true
+      STRAPI_HIDE_STARTUP_MESSAGE: false
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.postmaster-backend.entrypoints=websecure"
+      - "traefik.http.routers.postmaster-backend.rule=HOST(`$VIRTUAL_HOST`) && PathPrefix(`$CMS_PATH`)"
+      - "traefik.http.routers.postmaster-backend.service=postmaster-backend-srv"
+      - "traefik.http.routers.postmaster-backend.middlewares=postmaster-backend-strip"
+
+      - "traefik.http.services.postmaster-backend-srv.loadbalancer.server.port=1337"
+
+      - "traefik.http.middlewares.postmaster-backend-strip.stripprefix.prefixes=$CMS_PATH"
+      - "traefik.http.middlewares.postmaster-backend-strip.stripprefix.forceslash=false"
+
+
+  frontend:
+    image: reg.mc8051.de/mc8051/postmaster-website-frontend:latest
+    restart: $RESTART_POLICY
+    networks: [postmaster, traefik]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+    depends_on:
+      - backend
+    environment:
+      FRONTEND_STRAPI_API_TOKEN: $FRONTEND_API_TOKEN
+      FRONTEND_STRAPI_API_URL: http://backend:1337
+      FRONTEND_STRAPI_API_URL_PUBLIC: ${CMS_URL}${CMS_PATH}
+      FRONTEND_STRAPI_EZFORMS_TOKEN: $FRONTEND_FORMS_TOKEN
+      FRONTEND_RECAPTCHA_PUBLIC: $RECAPTCHA_PUBLIC
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.postmaster-frontend.entrypoints=websecure"
+      - "traefik.http.routers.postmaster-frontend.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.postmaster-frontend.service=postmaster-frontend-srv"
+      - "traefik.http.services.postmaster-frontend-srv.loadbalancer.server.port=3000"
+
+
+  database:
+    image: mariadb:11
+    restart: $RESTART_POLICY
+    networks: [postmaster]
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+    environment:
+      MARIADB_ROOT_PASSWORD: strapi-root
+      MARIADB_DATABASE: strapi
+      MARIADB_USER: strapi
+      MARIADB_PASSWORD: strapi
+    volumes:
+      - "${DATA_DIR}/mariadb:/var/lib/mysql"
+  
+networks:
+  postmaster:
+  traefik:
+    external: true
+
