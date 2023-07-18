@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+  web:
+    image: nginx:alpine
+    volumes:
+      - ./data/etc/nginx/:/etc/nginx/conf.d/
+      - ./data/web:/var/www/html
+    restart: unless-stopped
+    networks: [traefik]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.mailhomepage.entrypoints=web"
+      - "traefik.http.routers.mailhomepage.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.mailhomepage.priority=20"
+      - "traefik.http.routers.mailhomepage.middlewares=mc8051-redirect"
+      
+      - "traefik.http.middlewares.mc8051-redirect.redirectregex.regex=^(?i)(?:[a-z]+://)?(?:[^/]+\\.)*([a-z0-9]+\\.[a-z]+)(?:/.*)?"
+      - "traefik.http.middlewares.mc8051-redirect.redirectregex.replacement=https://postmaster.mc8051.de/en/home?ref=mailsrv&host=$1"
+      - "traefik.http.middlewares.mc8051-redirect.redirectregex.permanent=false"
+
+networks:
+  traefik:
+    external: true
