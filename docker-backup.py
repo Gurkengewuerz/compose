@@ -6,6 +6,8 @@
 # License     : GNU AGPL v3 
 # ---------------------------------------------------------------------------
 
+# 0 4 * * * /usr/bin/python3 /home/user/deployment/docker-backup.py > /tmp/backup.log
+
 import subprocess
 import docker
 import os
