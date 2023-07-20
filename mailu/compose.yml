@@ -59,7 +59,7 @@ services:
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=${DATA_DIR}/db-backup"
+      - "backup.volumes=${DATA_DIR}/db-backup,${DATA_DIR}/overrides"
 
   certdumper:
     restart: $RESTART_POLICY
@@ -154,6 +154,10 @@ services:
       options:
         tag: mailu-admin
         max-size: "50m"
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${DATA_DIR}/dkim"
 
   imap:
     image: ${DOCKER_ORG:-ghcr.io/mailu}/${DOCKER_PREFIX:-}dovecot:${MAILU_VERSION}
@@ -172,6 +176,10 @@ services:
       options:
         tag: mailu-imap
         max-size: "50m"
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${DATA_DIR}/mail"
 
   smtp:
     image: ${DOCKER_ORG:-ghcr.io/mailu}/${DOCKER_PREFIX:-}postfix:${MAILU_VERSION}
