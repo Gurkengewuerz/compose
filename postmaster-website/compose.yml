@@ -82,6 +82,30 @@ services:
       - "traefik.http.services.postmaster-frontend-srv.loadbalancer.server.port=3000"
 
 
+  dns:
+    image: reg.mc8051.de/mc8051/postmaster-website-dns:latest
+    restart: $RESTART_POLICY
+    networks: [postmaster]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+    # Disabled due to not used and a potential secruity hole
+    #ports:
+    #  - "${DNS_BIND_ADDRESS}:53:53/udp"
+    #  - "${DNS_BIND_ADDRESS}:53:53/tcp"
+    depends_on:
+      - backend
+    environment:
+      STRAPI_BACKEND: http://backend:1337
+      STRAPI_API_TOKEN: $BACKEND_DNS_TOKEN
+      DNS_TTL: 300
+      DNS_DOMAIN_BL: $DNS_DOMAIN_BL
+      DNS_DOMAIN_WL: $DNS_DOMAIN_WL
+      LOG_LEVEL: $DNS_LOG_LEVEL
+
+
+
   database:
     image: mariadb:11
     restart: $RESTART_POLICY
