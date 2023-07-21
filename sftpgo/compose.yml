@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+
+  sftpgo:
+    image: "drakkan/sftpgo:plugins"
+    user: "1000"
+    restart: unless-stopped
+    environment:
+      SFTPGO_LOG_LEVEL: "info"
+      SFTPGO_LOG_UTC_TIME: "true"
+      SFTPGO_HTTPD__BINDINGS__0__PORT: 8080
+      SFTPGO_HTTPD__BINDINGS__0__PROXY_ALLOWED: $PROXY_IP
+      SFTPGO_HTTPD__BINDINGS__0__CLIENT_IP_PROXY_HEADER: "X-Forwarded-For"
+      SFTPGO_SFTPD__BINDINGS__0__PORT: 2222
+      SFTPGO_WEBDAVD__BINDINGS__0__PORT: 5007
+      SFTPGO_WEBDAVD__BINDINGS__0__PREFIX: "/dav"
+      SFTPGO_WEBDAVD__BINDINGS__0__PROXY_ALLOWED: $PROXY_IP
+      SFTPGO_WEBDAVD__BINDINGS__0__CLIENT_IP_PROXY_HEADER: "X-Forwarded-For"
+      SFTPGO_DATA_PROVIDER__DRIVER: "sqlite"
+      SFTPGO_DATA_PROVIDER__NAME: "/var/lib/sftpgo/sftpgo.db"
+      SFTPGO_COMMON__DEFENDER__ENABLED: "true"
+      SFTPGO_COMMON__DEFENDER__BAN_TIME: 15
+      SFTPGO_COMMON__DEFENDER__BAN_TIME_INCREMENT: 100
+      SFTPGO_COMMON__DEFENDER__THRESHOLD: 5
+      SFTPGO_COMMON__DEFENDER__OBSERVATION_TIME: 15
+      SFTPGO_SMTP__HOST: $SMTP_HOST
+      SFTPGO_SMTP__PORT: $SMTP_PORT
+      SFTPGO_SMTP__FROM: $SMTP_FROM
+      SFTPGO_SMTP__USER: $SMTP_USER
+      SFTPGO_SMTP__PASSWORD: $SMTP_PASSWORD
+      SFTPGO_SMTP__ENCRYPTION: $SMTP_ENCRYPTION
+    volumes:
+      - "${DATA_DIR}/sftpgo/data:/srv/sftpgo/data"
+      - "${DATA_DIR}/sftpgo/config:/var/lib/sftpgo"
+    ports:
+      - "8099:8080/tcp"
+      - "2222:2222/tcp"
+      - "5007:5007/tcp"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+
