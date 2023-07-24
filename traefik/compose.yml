@@ -34,6 +34,10 @@ services:
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=traefik-auth"
       - "traefik.http.middlewares.traefik-auth.basicauth.users=${DASHBOARD_USERNAME}:${DASHBOARD_PASSWORD}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
 
 networks:
   traefik:
