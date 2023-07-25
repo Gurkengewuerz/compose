@@ -1,13 +1,7 @@
-# Writing Logs to a File, in JSON
 log:
   level: INFO
-#  filePath: "log-file.log"
-#  format: json
 
-# Configuring a buffer of 100 lines
-accessLog:
-#  filePath: "log-access.log"
-#  bufferingSize: 100
+accessLog: {}
 
 entryPoints:
   webalternate:
