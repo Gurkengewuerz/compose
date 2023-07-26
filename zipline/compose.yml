@@ -1,0 +1,85 @@
+version: '3'
+
+services:
+
+  postgres:
+    image: postgres:15
+    restart: $RESTART_POLICY
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DATABASE=postgres
+    volumes:
+      - "$DATA_DIR/postgres:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zipline:
+    image: ghcr.io/diced/zipline
+    restart: $RESTART_POLICY
+    environment:
+      - CORE_RETURN_HTTPS=false
+      - CORE_SECRET=$SECRET_KEY
+      - CORE_HOST=0.0.0.0
+      - CORE_PORT=3000
+      - CORE_DATABASE_URL=postgres://postgres:postgres@postgres/postgres
+      - CORE_LOGGER=true
+      - UPLOADER_DEFAULT_FORMAT=RANDOM
+      - WEBSITE_TITLE=$WEBSITE_TITLE
+      - UPLOADER_DISABLED_EXTENSIONS=
+      - FEATURES_INVITES=true
+      - FEATURES_OAUTH_LOGIN_ONLY=false
+      - FEATURES_USER_REGISTRATION=$ENABLE_REGISTRATION
+      - FEATURES_ROBOTS_TXT=true
+    volumes:
+      - "$DATA_DIR/zipline/uploads:/zipline/uploads"
+      - "$DATA_DIR/zipline/public:/zipline/public"
+    depends_on:
+      - postgres
+    networks:
+      - traefik
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.zipline.entrypoints=websecure"
+      - "traefik.http.routers.zipline.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.zipline.service=zipline-srv"
+      - "traefik.http.services.zipline-srv.loadbalancer.server.port=3000"
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${DATA_DIR}/zipline/uploads,${DATA_DIR}/zipline/public"
+
+  backup:
+    image: tiredofit/db-backup
+    restart: $RESTART_POLICY
+    volumes:
+      - "$DATA_DIR/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - DB_TYPE=pgsql
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=postgres
+      - COMPRESSION=NONE
+      - ENABLE_CHECKSUM=FALSE
+      - CHECKSUM=SHA1
+      - DB_DUMP_BEGIN=0315
+      - DB_DUMP_FREQ=1440
+      - DB_CLEANUP_TIME=10080
+      - CREATE_LATEST_SYMLINK=TRUE
+    depends_on:
+      - postgres
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${DATA_DIR}/db-backup"
+    
+
+networks:
+  traefik:
+    external: true
