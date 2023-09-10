@@ -10,13 +10,16 @@ services:
       - no-new-privileges:true
     ports:
       - "0.0.0.0:80:80"
-      - "0.0.0.0:443:443"
+      - "0.0.0.0:443:443/tcp"
+      - "0.0.0.0:443:443/udp"
       - "0.0.0.0:9999:9999"
       - "[::]:80:80"
-      - "[::]:443:443"
+      - "[::]:443:443/tcp"
+      - "[::]:443:443/udp"
       - "[::]:9999:9999"
     networks:
       traefik:
+      ipv6:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -41,4 +44,6 @@ services:
 
 networks:
   traefik:
+    external: true
+  ipv6:
     external: true

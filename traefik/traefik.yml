@@ -17,6 +17,7 @@ entryPoints:
           permanent: false
   websecure:
     address: ":443"
+    http3: {}
     http:
       tls:
         certResolver: letsencrypt
@@ -51,3 +52,6 @@ api:
 metrics:
   prometheus: 
     entryPoint: dashboard
+
+experimental:
+  http3: true
