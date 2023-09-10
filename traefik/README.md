@@ -1,3 +1,11 @@
 # traefik reverse proxy
 
-`docker network create --ipv6 --subnet fd90:1234:5678:beef::/64 traefik`
+Edit `/etc/docker/daemon.json`
+
+```json
+{
+    "userland-proxy": false
+}
+```
+
+`docker network create --subnet 72.18.0.0/16 --ipv6 --subnet fd90:1234:5678:beef::/64 traefik`
