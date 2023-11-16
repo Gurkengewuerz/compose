@@ -1,0 +1,101 @@
+version: "3.7"
+
+services:
+
+  outline:
+    image: outlinewiki/outline:0.73.1
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - "./data/outline:/var/lib/outline/data"
+    depends_on:
+      - db
+      - redis
+    networks: [backend, traefik]
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/db-backup"
+      
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.outline.entrypoints=websecure"
+      - "traefik.http.routers.outline.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.services.outline.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 20s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - "./data/postgres/data:/var/lib/postgresql/data"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+
+  backup:
+    image: tiredofit/db-backup
+    restart: unless-stopped
+    depends_on:
+      - db
+    volumes:
+      - "./data/postgres/backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - DB_TYPE=postgres
+      - DB_HOST=db
+      - DB_USER=$POSTGRES_USER
+      - DB_PASS=$POSTGRES_PASSWORD
+      - DB_NAME=$POSTGRES_DB
+      - COMPRESSION=NONE
+      - ENABLE_CHECKSUM=FALSE
+      - CHECKSUM=SHA1
+      - DB_DUMP_BEGIN=0315
+      - DB_DUMP_FREQ=1440
+      - DB_CLEANUP_TIME=10080
+      - CREATE_LATEST_SYMLINK=TRUE
+    networks: [backend]
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/db-backup"
+
+networks:
+  traefik:
+    external: true
+  backend:
