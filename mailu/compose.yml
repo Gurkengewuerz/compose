@@ -42,7 +42,7 @@ services:
       - DB_TYPE=mariadb
       - DB_HOST=database
       - DB_USER=root
-      - DB_PASS=mailu
+      - DB_PASS=mailu-root
       - DB_NAME=mailu
       - COMPRESSION=NONE
       - ENABLE_CHECKSUM=FALSE
