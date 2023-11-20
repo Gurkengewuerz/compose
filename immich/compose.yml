@@ -18,12 +18,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
-      - "traefik.http.routers.immich-api.entrypoints=websecure"
-      - "traefik.http.routers.immich-api.rule=HOST(`$IMMICH_DOMAIN`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.immich-api.service=immich-api-srv"
-      - "traefik.http.routers.immich-api.middlewares=immich-api-strip"
-      - "traefik.http.services.immich-api-srv.loadbalancer.server.port=3001"
-      - "traefik.http.middlewares.immich-api-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.immich.entrypoints=websecure"
+      - "traefik.http.routers.immich.rule=HOST(`$IMMICH_DOMAIN`)"
+      - "traefik.http.routers.immich.service=immich-srv"
+      - "traefik.http.services.immich-srv.loadbalancer.server.port=3001"
 
   immich-microservices:
     container_name: immich_microservices
@@ -51,21 +49,6 @@ services:
       - .env
     restart: unless-stopped
     networks: [immich]
-
-  immich-web:
-    container_name: immich_web
-    image: ghcr.io/immich-app/immich-web:release
-    env_file:
-      - .env
-    restart: unless-stopped
-    networks: [immich, traefik]
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.immich.entrypoints=websecure"
-      - "traefik.http.routers.immich.rule=HOST(`$IMMICH_DOMAIN`)"
-      - "traefik.http.routers.immich.service=immich-srv"
-      - "traefik.http.services.immich-srv.loadbalancer.server.port=3000"
 
   typesense:
     container_name: immich_typesense
