@@ -93,7 +93,7 @@ services:
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/db-backup"
+      - "backup.volumes=./data/postgres/backup"
 
 networks:
   traefik:
