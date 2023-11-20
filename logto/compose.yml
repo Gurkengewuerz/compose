@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+
+  server:
+    image: svhd/logto:latest
+    restart: unless-stopped
+    networks: [backend, traefik]
+    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
+    environment:
+      - TRUST_PROXY_HEADER=1
+      - DB_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@db:5432/$POSTGRES_DB
+      - ENDPOINT=https://$VIRTUAL_HOST
+      - ADMIN_ENDPOINT=https://admin.$VIRTUAL_HOST
+      - REDIS_URL=redis://redis
+    depends_on:
+      - db
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      - "traefik.http.routers.logto.entrypoints=websecure"
+      - "traefik.http.routers.logto.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.logto.service=logto"
+      - "traefik.http.services.logto.loadbalancer.server.port=3001"
+
+      - "traefik.http.routers.logtoadmin.entrypoints=websecure"
+      - "traefik.http.routers.logtoadmin.rule=Host(`admin.$VIRTUAL_HOST`)"
+      - "traefik.http.routers.logtoadmin.service=logtoadmin"
+      - "traefik.http.services.logtoadmin.loadbalancer.server.port=3002"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+
+  db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    volumes:
+      - "./data/postgres/data:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - POSTGRES_DB=$POSTGRES_DB
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+
+  backup:
+    image: tiredofit/db-backup
+    restart: unless-stopped
+    depends_on:
+      - db
+    volumes:
+      - "./data/postgres/backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - DB_TYPE=postgres
+      - DB_HOST=db
+      - DB_USER=$POSTGRES_USER
+      - DB_PASS=$POSTGRES_PASSWORD
+      - DB_NAME=$POSTGRES_DB
+      - COMPRESSION=NONE
+      - ENABLE_CHECKSUM=FALSE
+      - CHECKSUM=SHA1
+      - DB_DUMP_BEGIN=0315
+      - DB_DUMP_FREQ=1440
+      - DB_CLEANUP_TIME=10080
+      - CREATE_LATEST_SYMLINK=TRUE
+      - CONTAINER_ENABLE_MONITORING=FALSE
+    networks: [backend]
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=./data/db-backup"
+
+networks:
+  backend:
+  traefik:
+    external: true
