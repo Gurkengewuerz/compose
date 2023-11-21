@@ -97,5 +97,5 @@ services:
         max-file: "1"
 
 networks:
-  lnmp:
+  traefik:
     external: true
