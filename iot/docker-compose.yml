@@ -1,10 +1,14 @@
-version: "3"
+version: "3.8"
 
 services:
-
   influx:
     image: influxdb:alpine
     restart: unless-stopped
+    ports:
+      - "8086:8086"
+    volumes:
+      - ${CONTAINER_DIR}/influx/data:/var/lib/influxdb2
+      - ${CONTAINER_DIR}/influx/config:/etc/influxdb2
     environment:
       - PUID=1000
       - PGID=1000
@@ -13,47 +17,35 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=$INFLUXDB_INIT_PASSWORD
       - DOCKER_INFLUXDB_INIT_ORG=$INFLUXDB_INIT_ORG
       - DOCKER_INFLUXDB_INIT_BUCKET=default
-    ports:
-      - "8086:8086"
-    volumes:
-      - ${CONTAINER_DIR}/influx/data:/var/lib/influxdb2
-      - ${CONTAINER_DIR}/influx/config:/etc/influxdb2
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
     logging:
-      # limit logs retained on host to 25MB
       driver: "json-file"
       options:
-        max-size: "500k"
-        max-file: "50"
+        max-size: "1m"
+        max-file: "1"
 
   mqtt:
     image: gurken2108/mqtt-server:latest
-    environment:
-      PATH_AUTH_FILE: "/config/auth.json"
-      #PATH_PERSISTENCE_FILE: "/config/storage"
     restart: unless-stopped
-    volumes:
-      - ${CONTAINER_DIR}/mqtt:/config/
     ports:
       - "1882:1882"
       - "1883:1883"
+    volumes:
+      - ${CONTAINER_DIR}/mqtt:/config/
+    environment:
+      PATH_AUTH_FILE: "/config/auth.json"
+      #PATH_PERSISTENCE_FILE: "/config/storage"
     logging:
       driver: "local"
       options:
-        max-size: "10m"
-        max-file: "5"
-
-
+        max-size: "1m"
+        max-file: "1"
 #  mosquitto:
 #    image: eclipse-mosquitto:latest
 #    restart: unless-stopped
-#    environment:
-#      - TZ=Europe/Berlin
-#      - PUID=1000
-#      - PGID=1000
 #    ports:
 #      - "9001:9001"
 #      - "1883:1883"
@@ -61,9 +53,13 @@ services:
 #      - ${CONTAINER_DIR}/mosquitto/data:/mosquitto/data
 #      - ${CONTAINER_DIR}/mosquitto/config:/mosquitto/config
 #      - ${CONTAINER_DIR}/mosquitto/log:/mosquitto/log
+#    environment:
+#      - TZ=Europe/Berlin
+#      - PUID=1000
+#      - PGID=1000
 #    logging:
 #      # limit logs retained on host to 25MB
 #      driver: "json-file"
 #      options:
-#        max-size: "500k"
-#        max-file: "50"
+#        max-size: "512k"
+#        max-file: "1"

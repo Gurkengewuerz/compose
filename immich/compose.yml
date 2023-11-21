@@ -5,16 +5,16 @@ services:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:release
     command: ["start-server.sh"]
-    volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
-    env_file:
-      - .env
+    restart: unless-stopped
+    networks: [default, traefik]
     depends_on:
       - redis
       - database
       - typesense
-    restart: unless-stopped
-    networks: [immich, traefik]
+    volumes:
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+    env_file:
+      - .env
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -22,12 +22,18 @@ services:
       - "traefik.http.routers.immich.rule=HOST(`$IMMICH_DOMAIN`)"
       - "traefik.http.routers.immich.service=immich-srv"
       - "traefik.http.services.immich-srv.loadbalancer.server.port=3001"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   immich-microservices:
     container_name: immich_microservices
     image: ghcr.io/immich-app/immich-server:release
     entrypoint: ["/bin/sh", "./start-microservices.sh"]
     command: ["start-microservices.sh"]
+    restart: unless-stopped
     volumes:
       - ${UPLOAD_LOCATION}:/usr/src/app/upload
     env_file:
@@ -36,42 +42,55 @@ services:
       - redis
       - database
       - typesense
-    restart: unless-stopped
-    networks: [immich]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   immich-machine-learning:
     container_name: immich_machine_learning
     image: ghcr.io/immich-app/immich-machine-learning:release
+    restart: unless-stopped
     volumes:
       - ${UPLOAD_LOCATION}:/usr/src/app/upload
       - ${CONTAINER_DIR}/model-cache:/cache
     env_file:
       - .env
-    restart: unless-stopped
-    networks: [immich]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   typesense:
     container_name: immich_typesense
     image: typesense/typesense:0.24.0
+    restart: unless-stopped
     environment:
       - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
       - TYPESENSE_DATA_DIR=/data
-    logging:
-      driver: none
     volumes:
       - ${CONTAINER_DIR}/typesense:/data
-    restart: unless-stopped
-    networks: [immich]
+    logging:
+      driver: none
 
   redis:
     container_name: immich_redis
     image: redis:6.2
     restart: unless-stopped
-    networks: [immich]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   database:
     container_name: immich_postgres
     image: postgres:14
+    restart: unless-stopped
+    volumes:
+      - ${CONTAINER_DIR}/pgdata:/var/lib/postgresql/data
     env_file:
       - .env
     environment:
@@ -79,12 +98,12 @@ services:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_DB: ${DB_DATABASE_NAME}
       PG_DATA: /var/lib/postgresql/data
-    volumes:
-      - ${CONTAINER_DIR}/pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks: [immich]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
   traefik:
     external: true
-  immich:

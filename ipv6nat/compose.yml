@@ -1,12 +1,12 @@
-version: '3'
+version: "3.8"
+
 services:
   ipv6nat:
     container_name: ipv6nat
-    restart: always
     image: robbertkl/ipv6nat
+    restart: always
     privileged: true
     network_mode: host
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /lib/modules:/lib/modules:ro
-
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/lib/modules:/lib/modules:ro"

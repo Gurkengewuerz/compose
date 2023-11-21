@@ -1,9 +1,13 @@
-version: "3.7"
+version: "3.8"
 
 services:
   vaultwarden:
     image: ghcr.io/dani-garcia/vaultwarden:latest
     restart: unless-stopped
+    ports:
+      - "3020:80"
+    volumes:
+      - ${CONTAINER_DIR}:/data
     environment:
       #- TZ=Europe/Berlin
       - PUID=1000
@@ -30,13 +34,8 @@ services:
       - PUSH_ENABLED=$PUSH_ENABLED
       - PUSH_INSTALLATION_ID=$PUSH_INSTALLATION_ID
       - PUSH_INSTALLATION_KEY=$PUSH_INSTALLATION_KEY
-    ports:
-      - "3020:80"
     logging:
-      # limit logs retained on host to 25MB
       driver: "json-file"
       options:
-        max-size: "500k"
-        max-file: "50"
-    volumes:
-      - ${CONTAINER_DIR}:/data
+        max-size: "1m"
+        max-file: "1"

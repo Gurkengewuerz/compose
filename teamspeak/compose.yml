@@ -1,14 +1,15 @@
-version: "3"
+version: "3.8"
 
 services:
   teamspeak:
     image: teamspeak:3.13
     restart: unless-stopped
-    networks: [ts]
     ports:
       - "9987:9987/udp"
       - "9999:9999/udp"
       - "30033:30033"
+    volumes:
+      - "${CONTAINER_DIR}/teamspeak:/var/ts3server"
     environment:
       TS3SERVER_DB_PLUGIN: ts3db_mariadb
       TS3SERVER_DB_SQLCREATEPATH: create_mariadb
@@ -20,31 +21,37 @@ services:
       TS3SERVER_DB_WAITUNTILREADY: 30
       TS3SERVER_QUERY_PROTOCOLS: ssh
       TS3SERVER_LICENSE: accept
-    volumes:
-      - ${CONTAINER_DIR}/teamspeak:/var/ts3server
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/teamspeak"
       - "backup.exclude=*/files/*,*/logs/*"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   db:
     image: mariadb:10.9
     restart: unless-stopped
-    networks: [ts]
+    volumes:
+      - ${CONTAINER_DIR}/db:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
       MYSQL_DATABASE: teamspeak
-    volumes:
-      - ${CONTAINER_DIR}/db:/var/lib/mysql
-
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   backup:
     image: tiredofit/db-backup
-    depends_on:
-      - db
+    restart: unless-stopped
+    depends_on: [db]
     volumes:
-      - ${CONTAINER_DIR}/db-backup:/backup
+      - "${CONTAINER_DIR}/db-backup:/backup"
     environment:
       - TIMEZONE=UTC
       - DB_TYPE=mariadb
@@ -59,12 +66,12 @@ services:
       - DB_DUMP_FREQ=1440
       - DB_CLEANUP_TIME=10080
       - CREATE_LATEST_SYMLINK=TRUE
-    restart: unless-stopped
-    networks: [ts]
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"
-
-networks:
-  ts:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"

@@ -1,13 +1,13 @@
-version: "3"
+version: "3.8"
 
 services:
   web:
     image: nginx:alpine
+    restart: unless-stopped
+    networks: [traefik]
     volumes:
       - ${CONTAINER_DIR}/etc/nginx/:/etc/nginx/conf.d/
       - ${CONTAINER_DIR}/web:/var/www/html
-    restart: unless-stopped
-    networks: [traefik]
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -15,10 +15,15 @@ services:
       - "traefik.http.routers.mailhomepage.rule=HostRegexp(`{host:.+}`)"
       - "traefik.http.routers.mailhomepage.priority=20"
       - "traefik.http.routers.mailhomepage.middlewares=mc8051-redirect"
-      
+
       - "traefik.http.middlewares.mc8051-redirect.redirectregex.regex=^(?i)(?:[a-z]+://)?(?:[^/]+\\.)*([a-z0-9]+\\.[a-z]+)(?:/.*)?"
       - "traefik.http.middlewares.mc8051-redirect.redirectregex.replacement=https://postmaster.mc8051.de/en/home?ref=mailsrv&host=$1"
       - "traefik.http.middlewares.mc8051-redirect.redirectregex.permanent=false"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
   traefik:

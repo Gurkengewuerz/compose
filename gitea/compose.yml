@@ -1,23 +1,20 @@
-version: "3"
+version: "3.8"
 
 services:
   server:
     image: gitea/gitea:1.21
+    restart: always
+    networks: [default, traefik]
+    depends_on: [db]
+    ports:
+      - "222:22"
     environment:
       - USER_UID=1000
       - USER_GID=1000
-    restart: always
-    networks:
-      - gitea
-      - traefik
     volumes:
       - "${CONTAINER_DIR}/gitea:/data"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
-    ports:
-      - "222:22"
-    depends_on:
-      - db
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -28,6 +25,11 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/gitea"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   db:
     image: mariadb:10.9
@@ -37,14 +39,18 @@ services:
       - MYSQL_USER=gitea
       - MYSQL_PASSWORD=gitea
       - MYSQL_DATABASE=gitea
-    networks: [gitea]
     volumes:
       - "${CONTAINER_DIR}/db:/var/lib/mysql"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   backup:
     image: tiredofit/db-backup
-    depends_on:
-      - db
+    restart: unless-stopped
+    depends_on: [db]
     volumes:
       - "${CONTAINER_DIR}/db-backup:/backup"
     environment:
@@ -61,14 +67,16 @@ services:
       - DB_DUMP_FREQ=1440
       - DB_CLEANUP_TIME=10080
       - CREATE_LATEST_SYMLINK=TRUE
-    restart: unless-stopped
-    networks: [gitea]
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
-  gitea:
   traefik:
     external: true

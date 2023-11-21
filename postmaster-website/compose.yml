@@ -1,17 +1,11 @@
-version: "3"
+version: "3.8"
 
 services:
-
   backend:
     image: reg.mc8051.de/mc8051/postmaster-website-backend:latest
     restart: $RESTART_POLICY
     networks: [postmaster, traefik]
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-    depends_on:
-      - database
+    depends_on: [db]
     environment:
       CMS_URL: $CMS_URL
       CMS_PATH: $CMS_PATH
@@ -34,7 +28,7 @@ services:
       PORT: 1337
 
       DATABASE_CLIENT: mysql2
-      DATABASE_HOST: database
+      DATABASE_HOST: db
       DATABASE_PORT: 3306
       DATABASE_NAME: strapi
       DATABASE_USERNAME: strapi
@@ -55,18 +49,17 @@ services:
 
       - "traefik.http.middlewares.postmaster-backend-strip.stripprefix.prefixes=$CMS_PATH"
       - "traefik.http.middlewares.postmaster-backend-strip.stripprefix.forceslash=false"
-
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   frontend:
     image: reg.mc8051.de/mc8051/postmaster-website-frontend:latest
     restart: $RESTART_POLICY
     networks: [postmaster, traefik]
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-    depends_on:
-      - backend
+    depends_on: [backend]
     environment:
       FRONTEND_STRAPI_API_TOKEN: $FRONTEND_API_TOKEN
       FRONTEND_STRAPI_API_URL: http://backend:1337
@@ -80,22 +73,21 @@ services:
       - "traefik.http.routers.postmaster-frontend.rule=HOST(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.postmaster-frontend.service=postmaster-frontend-srv"
       - "traefik.http.services.postmaster-frontend-srv.loadbalancer.server.port=3000"
-
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   dns:
     image: reg.mc8051.de/mc8051/postmaster-website-dns:latest
     restart: $RESTART_POLICY
     networks: [postmaster]
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
     # Disabled due to not used and a potential secruity hole
     #ports:
     #  - "${DNS_BIND_ADDRESS}:53:53/udp"
     #  - "${DNS_BIND_ADDRESS}:53:53/tcp"
-    depends_on:
-      - backend
+    depends_on: [backend]
     environment:
       STRAPI_BACKEND: http://backend:1337
       STRAPI_API_TOKEN: $BACKEND_DNS_TOKEN
@@ -103,27 +95,30 @@ services:
       DNS_DOMAIN_BL: $DNS_DOMAIN_BL
       DNS_DOMAIN_WL: $DNS_DOMAIN_WL
       LOG_LEVEL: $DNS_LOG_LEVEL
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
-
-
-  database:
+  db:
     image: mariadb:11
     restart: $RESTART_POLICY
     networks: [postmaster]
-    logging:
-      driver: json-file
-      options:
-        max-size: 5m
+    volumes:
+      - "${CONTAINER_DIR}/mariadb:/var/lib/mysql"
     environment:
       MARIADB_ROOT_PASSWORD: strapi-root
       MARIADB_DATABASE: strapi
       MARIADB_USER: strapi
       MARIADB_PASSWORD: strapi
-    volumes:
-      - "${CONTAINER_DIR}/mariadb:/var/lib/mysql"
-  
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
 networks:
   postmaster:
   traefik:
     external: true
-

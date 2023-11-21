@@ -1,11 +1,17 @@
-version: "3"
+version: "3.8"
 
 services:
-
   sftpgo:
     image: "drakkan/sftpgo:plugins"
     user: "1000"
     restart: unless-stopped
+    ports:
+      - "8099:8080/tcp"
+      - "2222:2222/tcp"
+      - "5007:5007/tcp"
+    volumes:
+      - "${CONTAINER_DIR}/sftpgo/data:/srv/sftpgo/data"
+      - "${CONTAINER_DIR}/sftpgo/config:/var/lib/sftpgo"
     environment:
       SFTPGO_LOG_LEVEL: "info"
       SFTPGO_LOG_UTC_TIME: "true"
@@ -30,15 +36,8 @@ services:
       SFTPGO_SMTP__USER: $SMTP_USER
       SFTPGO_SMTP__PASSWORD: $SMTP_PASSWORD
       SFTPGO_SMTP__ENCRYPTION: $SMTP_ENCRYPTION
-    volumes:
-      - "${CONTAINER_DIR}/sftpgo/data:/srv/sftpgo/data"
-      - "${CONTAINER_DIR}/sftpgo/config:/var/lib/sftpgo"
-    ports:
-      - "8099:8080/tcp"
-      - "2222:2222/tcp"
-      - "5007:5007/tcp"
     logging:
       driver: "json-file"
       options:
-        max-size: "50m"
-
+        max-size: "1m"
+        max-file: "1"

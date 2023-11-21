@@ -1,30 +1,14 @@
-version: '3'
+version: "3.8"
 
 services:
-  mongo:
-    image: mongo:3.6
-    restart: unless-stopped
-    ports:
-      - "3999:27017/tcp"
-    volumes:
-      - /root/unifi/data/mongo/db:/data/db
-      - /root/unifi/data/mongo/config:/data/configdb
-    logging:
-      # limit logs retained on host to 25MB
-      driver: "json-file"
-      options:
-        max-size: "500k"
-        max-file: "50"
-
   controller:
     image: "jacobalberty/unifi:latest"
-    depends_on:
-      - mongo
     init: true
     network_mode: "host"
     restart: unless-stopped
+    depends_on: [mongo]
     volumes:
-      - /root/unifi/data/unifi:/unifi
+      - ${CONTAINER_DIR}/unifi:/unifi
       - init:/unifi/init.d
       - run:/var/run/unifi
     environment:
@@ -32,11 +16,10 @@ services:
       STATDB_URI: mongodb://$HOST_IP:3999/unifi_stat
       DB_NAME: unifi
     logging:
-      # limit logs retained on host to 25MB
       driver: "json-file"
       options:
-        max-size: "500k"
-        max-file: "50"
+        max-size: "1m"
+        max-file: "1"
     #ports:
     #  - "3478:3478/udp" # STUN
     #  - "6789:6789/tcp" # Speed test
@@ -45,6 +28,20 @@ services:
     #  - "8880:8880/tcp" # HTTP portal redirection
     #  - "8843:8843/tcp" # HTTPS portal redirection
     #  - "10001:10001/udp" # AP discovery
+
+  mongo:
+    image: mongo:3.6
+    restart: unless-stopped
+    ports:
+      - "3999:27017/tcp"
+    volumes:
+      - ${CONTAINER_DIR}/mongo/db:/data/db
+      - ${CONTAINER_DIR}/mongo/config:/data/configdb
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 volumes:
   init:

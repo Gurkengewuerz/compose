@@ -1,11 +1,11 @@
 version: "3"
 
 services:
-
   traefik:
-    image: traefik:latest
     container_name: traefik
+    image: traefik:latest
     restart: unless-stopped
+    networks: [traefik]
     security_opt:
       - no-new-privileges:true
     ports:
@@ -17,14 +17,12 @@ services:
       - "[::]:443:443/tcp"
       - "[::]:443:443/udp"
       - "[::]:9999:9999"
-    networks:
-      traefik:
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik.yml:/traefik.yml:ro
-      - ./config:/etc/traefik/config:ro
-      - ${CONTAINER_DIR}/certificates:/var/certificates
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.yml:/traefik.yml:ro"
+      - "./config:/etc/traefik/config:ro"
+      - "${CONTAINER_DIR}/certificates:/var/certificates"
     environment:
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_EMAIL: $ACME_MAIL
     labels:
@@ -39,7 +37,8 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "50m"
+        max-size: "1m"
+        max-file: "1"
 
 networks:
   traefik:

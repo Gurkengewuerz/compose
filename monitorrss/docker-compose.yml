@@ -1,10 +1,11 @@
-version: "3.7"
+version: "3.8"
 
 services:
-
   mrss-bot:
-    restart: unless-stopped
     image: synzen/monitorss
+    restart: unless-stopped
+    volumes:
+      - ${CONTAINER_DIR}/drss:/db
     environment:
       - DRSS_START=bot
       - DRSS_BOT_TOKEN=$BOT_TOKEN
@@ -12,6 +13,8 @@ services:
       - DRSS_BOT_ACTIVITYTYPE=$BOT_ACTIVITYTYPE
       - DRSS_BOT_ACTIVITYNAME=$BOT_ACTIVITYNAME
       - DRSS_BOT_OWNERIDS=$BOT_OWNERIDS
-    volumes:
-      - ${CONTAINER_DIR}/drss:/db
-
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"

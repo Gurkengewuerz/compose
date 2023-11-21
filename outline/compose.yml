@@ -1,22 +1,19 @@
-version: "3.7"
+version: "3.8"
 
 services:
-
   outline:
     image: outlinewiki/outline:0.73.1
     restart: unless-stopped
-    env_file: .env
+    networks: [default, traefik]
+    depends_on: [db, redis]
     volumes:
       - "${CONTAINER_DIR}/outline:/var/lib/outline/data"
-    depends_on:
-      - db
-      - redis
-    networks: [backend, traefik]
+    env_file: .env
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/outline"
-      
+
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.outline.entrypoints=websecure"
@@ -30,7 +27,8 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
+        max-size: "1m"
+        max-file: "1"
 
   redis:
     image: redis:7
@@ -38,7 +36,6 @@ services:
     volumes:
       - "/etc/localtime:/etc/localtime:ro"
       - "/etc/timezone:/etc/timezone:ro"
-    networks: [backend]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -47,19 +44,19 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "1m"
+        max-size: "512k"
+        max-file: "1"
 
   db:
     image: postgres:16
     restart: unless-stopped
-    env_file: .env
     volumes:
       - "${CONTAINER_DIR}/postgres/data:/var/lib/postgresql/data"
       - "/etc/localtime:/etc/localtime:ro"
       - "/etc/timezone:/etc/timezone:ro"
-    networks: [backend]
+    env_file: .env
     healthcheck:
-      test: ["CMD", "pg_isready"]
+      test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
       interval: 30s
       timeout: 20s
       retries: 3
@@ -67,12 +64,12 @@ services:
       driver: "json-file"
       options:
         max-size: "1m"
+        max-file: "1"
 
   backup:
     image: tiredofit/db-backup
     restart: unless-stopped
-    depends_on:
-      - db
+    depends_on: [db]
     volumes:
       - "${CONTAINER_DIR}/postgres/backup:/backup"
     environment:
@@ -89,13 +86,16 @@ services:
       - DB_DUMP_FREQ=1440
       - DB_CLEANUP_TIME=10080
       - CREATE_LATEST_SYMLINK=TRUE
-    networks: [backend]
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/postgres/backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
   traefik:
     external: true
-  backend:

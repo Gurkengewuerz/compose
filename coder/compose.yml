@@ -1,18 +1,18 @@
-version: "3.7"
+version: "3.8"
 
 services:
-
   code-server:
     image: lscr.io/linuxserver/code-server:latest
+    restart: unless-stopped
+    networks: [traefik]
+    volumes:
+      - "${CONTAINER_DIR}/coder/config:/config"
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=$TZ
       - PASSWORD=$PASSWORD
       - SUDO_PASSWORD=$SUDO_PASSWORD
-    volumes:
-      - "${CONTAINER_DIR}/coder/config:/config"
-    restart: unless-stopped
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -20,7 +20,11 @@ services:
       - "traefik.http.routers.coder.rule=HOST(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.coder.service=coder-srv"
       - "traefik.http.services.coder-srv.loadbalancer.server.port=8443"
-    networks: [traefik]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
 networks:
   traefik:

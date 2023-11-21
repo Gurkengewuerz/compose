@@ -1,16 +1,15 @@
-version: "3"
+version: "3.8"
 
 services:
-
   synapse:
     image: matrixdotorg/synapse:v1.87.0rc1
     restart: unless-stopped
+    networks: [traefik]
+    volumes:
+      - "${CONTAINER_DIR}/synapse:/data"
     environment:
       - UID=1000
       - GID=1000
-    volumes:
-      - ${CONTAINER_DIR}/synapse:/data
-    networks: [traefik]
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -22,9 +21,10 @@ services:
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/synapse"
     logging:
-      driver: json-file
+      driver: "json-file"
       options:
-        max-size: 50m
+        max-size: "512k"
+        max-file: "1"
 
 networks:
   traefik:

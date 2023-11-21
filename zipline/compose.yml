@@ -1,25 +1,15 @@
-version: '3'
+version: '3.8'
 
 services:
-
-  postgres:
-    image: postgres:15
-    restart: $RESTART_POLICY
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DATABASE=postgres
-    volumes:
-      - "${CONTAINER_DIR}/postgres:/var/lib/postgresql/data"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   zipline:
     image: ghcr.io/diced/zipline
     restart: $RESTART_POLICY
+    networks: [default, traefik]
+    depends_on: [postgres]
+    volumes:
+      - "${CONTAINER_DIR}/zipline/uploads:/zipline/uploads"
+      - "${CONTAINER_DIR}/zipline/public:/zipline/public"
     environment:
       - CORE_RETURN_HTTPS=false
       - CORE_SECRET=$SECRET_KEY
@@ -34,14 +24,6 @@ services:
       - FEATURES_OAUTH_LOGIN_ONLY=false
       - FEATURES_USER_REGISTRATION=$ENABLE_REGISTRATION
       - FEATURES_ROBOTS_TXT=true
-    volumes:
-      - "${CONTAINER_DIR}/zipline/uploads:/zipline/uploads"
-      - "${CONTAINER_DIR}/zipline/public:/zipline/public"
-    depends_on:
-      - postgres
-    networks:
-      - traefik
-      - default
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -53,9 +35,25 @@ services:
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/zipline/upl${CONTAINER_DIR}_DIR}/zipline/public"
 
+  postgres:
+    image: postgres:15
+    restart: $RESTART_POLICY
+    volumes:
+      - "${CONTAINER_DIR}/postgres:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DATABASE=postgres
+    healthcheck:
+      test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backup:
     image: tiredofit/db-backup
     restart: $RESTART_POLICY
+    depends_on: [postgres]
     volumes:
       - "${CONTAINER_DIR}/db-backup:/backup"
     environment:
@@ -72,13 +70,10 @@ services:
       - DB_DUMP_FREQ=1440
       - DB_CLEANUP_TIME=10080
       - CREATE_LATEST_SYMLINK=TRUE
-    depends_on:
-      - postgres
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"
-    
 
 networks:
   traefik:

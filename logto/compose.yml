@@ -1,21 +1,20 @@
-version: '3.8'
+version: "3.8"
 
 services:
-
   server:
     image: svhd/logto:latest
-    restart: unless-stopped
-    networks: [backend, traefik]
     entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
+    restart: unless-stopped
+    networks: [default, traefik]
+    depends_on:
+      - db
+      - redis
     environment:
       - TRUST_PROXY_HEADER=1
       - DB_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@db:5432/$POSTGRES_DB
       - ENDPOINT=https://$VIRTUAL_HOST
       - ADMIN_ENDPOINT=https://admin.$VIRTUAL_HOST
       - REDIS_URL=redis://redis
-    depends_on:
-      - db
-      - redis
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -33,11 +32,11 @@ services:
       driver: "json-file"
       options:
         max-size: "1m"
+        max-file: "1"
 
   redis:
     image: redis:alpine
     restart: unless-stopped
-    networks: [backend]
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       start_period: 20s
@@ -47,7 +46,8 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "1m"
+        max-size: "512k"
+        max-file: "1"
 
   db:
     image: postgres:14-alpine
@@ -58,22 +58,21 @@ services:
       - POSTGRES_USER=$POSTGRES_USER
       - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
       - POSTGRES_DB=$POSTGRES_DB
-    networks: [backend]
     healthcheck:
-      test: ["CMD", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
       interval: 30s
       timeout: 20s
       retries: 3
     logging:
       driver: "json-file"
       options:
-        max-size: "1m"
+        max-size: "512k"
+        max-file: "1"
 
   backup:
     image: tiredofit/db-backup
     restart: unless-stopped
-    depends_on:
-      - db
+    depends_on: [db]
     volumes:
       - "${CONTAINER_DIR}/postgres/backup:/backup"
     environment:
@@ -91,13 +90,16 @@ services:
       - DB_CLEANUP_TIME=10080
       - CREATE_LATEST_SYMLINK=TRUE
       - CONTAINER_ENABLE_MONITORING=FALSE
-    networks: [backend]
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/postgres/backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
-  backend:
   traefik:
     external: true

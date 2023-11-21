@@ -1,14 +1,14 @@
-version: "3"
+version: "3.8"
 
 services:
   openvpn:
     image: wheelybird/openvpn-ldap-otp:latest
-    ports:
-      - "1194:1194/udp"
     cap_add:
       - NET_ADMIN
     restart: unless-stopped
     networks: [ldap]
+    ports:
+      - "1194:1194/udp"
     volumes:
       - ${CONTAINER_DIR}/conf:/etc/openvpn
     environment:
@@ -28,8 +28,12 @@ services:
       - OVPN_DNS_SERVERS=1.1.1.1
       - OVPN_REGISTER_DNS=true
       - KEY_LENGTH=4096
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
 networks:
   ldap:
     external: true
-

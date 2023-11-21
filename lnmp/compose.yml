@@ -1,16 +1,16 @@
-version: "3"
+version: "3.8"
 
 services:
   web:
     image: nginx:alpine
-    volumes:
-      - ${CONTAINER_DIR}/etc/nginx/:/etc/nginx/conf.d/
-      - ${CONTAINER_DIR}/web:/var/www/html
     restart: unless-stopped
+    networks: [default, traefik]
     depends_on:
       - php
       - db
-    networks: [traefik, lnmp]
+    volumes:
+      - ${CONTAINER_DIR}/etc/nginx/:/etc/nginx/conf.d/
+      - ${CONTAINER_DIR}/web:/var/www/html
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -20,35 +20,52 @@ services:
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/etc/nginx,${CONTAINER_DIR}/web"
       - "backup.exclude=*/downloads/*,*/pma/*,*/ts3wi/*"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   php:
     image: chialab/php:8.1-fpm
     restart: unless-stopped
-    networks: [lnmp]
     volumes:
       - ${CONTAINER_DIR}/web:/var/www/html
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   php7:
     image: chialab/php:7.4-fpm
     restart: unless-stopped
-    networks: [lnmp]
     volumes:
       - ${CONTAINER_DIR}/web:/var/www/html
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   db:
     image: mariadb:10.9
     restart: unless-stopped
+    volumes:
+      - ${CONTAINER_DIR}/db:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
       MYSQL_DATABASE: default
-    volumes:
-      - ${CONTAINER_DIR}/db:/var/lib/mysql
-    networks: [lnmp]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   backup:
     image: tiredofit/db-backup
-    depends_on:
-      - db
+    restart: unless-stopped
+    depends_on: [db]
     volumes:
       - ${CONTAINER_DIR}/db-backup:/backup
     environment:
@@ -65,14 +82,16 @@ services:
       - DB_DUMP_FREQ=1440
       - DB_CLEANUP_TIME=10080
       - CREATE_LATEST_SYMLINK=TRUE
-    restart: unless-stopped
-    networks: [lnmp]
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
   lnmp:
-  traefik:
     external: true

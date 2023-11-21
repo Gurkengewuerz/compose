@@ -1,19 +1,19 @@
-version: '3'
+version: "3.8"
 
 services:
-
   client:
     image: tailscale/tailscale:latest
+    command: tailscaled
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     volumes:
       - ${CONTAINER_DIR}/tailscale:/var/lib
       - /dev/net/tun:/dev/net/tun
     logging:
-      driver: json-file
+      driver: "json-file"
       options:
-        max-size: 50m
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    network_mode: host
-    command: tailscaled
-    restart: unless-stopped
+        max-size: "512k"
+        max-file: "1"

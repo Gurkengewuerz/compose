@@ -1,10 +1,10 @@
-version: "3"
+version: "3.8"
 
 services:
-
   fastbin-rewritten:
     image: reg.mc8051.de/jozsefsallai/fastbin-rewritten:latest
     restart: unless-stopped
+    networks: [traefik]
     volumes:
       - ${CONTAINER_DIR}:/app/storage
     environment:
@@ -15,7 +15,6 @@ services:
       - LIMITS_MAX_PAYLOAD_SIZE=5mb
       - FILE_STORAGE_LOCATION=storage
       - SERVER_SECRET=$SERVER_SECRET
-    networks: [traefik]
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -27,7 +26,11 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/"
-
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
   traefik:

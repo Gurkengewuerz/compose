@@ -1,33 +1,13 @@
-version: "3.7"
+version: "3.8"
 
 services:
-
-  db:
-    image: mariadb
-    restart: unless-stopped
-    networks:
-      - nextcloud
-    command: --transaction-isolation=READ-COMMITTED --log-bin=ROW --innodb_read_only_compressed=OF
-    environment:
-      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
-      - MYSQL_PASSWORD=$DB_PASSWORD
-      - MYSQL_DATABASE=$DB_DB
-      - MYSQL_USER=$DB_USER
-      - MYSQL_INITDB_SKIP_TZINFO=1
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - ${CONTAINER_DIR}/db:/var/lib/mysql
-
   nextcloud:
     image: nextcloud
     restart: unless-stopped
-    networks:
-      - traefik
-      - nextcloud
-    depends_on:
-      - redis
-      - db
+    networks: [default, traefik]
+    depends_on: [redis, db]
+    volumes:
+      - ${CONTAINER_DIR}/nextcloud:/var/www/html
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -44,36 +24,91 @@ services:
       - "traefik.http.middlewares.nextcloud_redirect.redirectregex.replacement=/remote.php/dav/"
     environment:
       - REDIS_HOST=redis
-      - REDIS_HOST_PASSWORD=$REDIS_HOST_PASSWORD 
+      - REDIS_HOST_PASSWORD=$REDIS_HOST_PASSWORD
 
       - NEXTCLOUD_TRUSTED_DOMAINS=$VIRTUAL_HOST
       - TRUSTED_PROXIES=$TRUSTED_PROXIES
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+  db:
+    image: mariadb
+    command: --transaction-isolation=READ-COMMITTED --log-bin=ROW --innodb_read_only_compressed=OF
+    restart: unless-stopped
     volumes:
-      - ${CONTAINER_DIR}/nextcloud:/var/www/html
+      - "${CONTAINER_DIR}/db:/var/lib/mysql"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+    environment:
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+      - MYSQL_PASSWORD=$DB_PASSWORD
+      - MYSQL_DATABASE=$DB_DB
+      - MYSQL_USER=$DB_USER
+      - MYSQL_INITDB_SKIP_TZINFO=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   redis:
     image: redis:latest
-    restart: unless-stopped
     command: redis-server --save 20 1 --loglevel warning --requirepass $REDIS_HOST_PASSWORD
+    restart: unless-stopped
     environment:
       - REDIS_HOST_PASSWORD=$REDIS_HOST_PASSWORD
-    networks:
-      - nextcloud
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   nextcloud-cron:
     image: nextcloud
-    restart: unless-stopped
     entrypoint: /cron.sh
-    networks:
-      - nextcloud
-      - redis
-    depends_on:
-      - db
+    restart: unless-stopped
+    depends_on: [db, redis]
     volumes:
       - ${CONTAINER_DIR}/nextcloud:/var/www/html
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  backup:
+    image: tiredofit/db-backup
+    restart: unless-stopped
+    depends_on: [db]
+    volumes:
+      - ${CONTAINER_DIR}/db-backup:/backup
+    environment:
+      - TIMEZONE=UTC
+      - DB_TYPE=mariadb
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASS=$DB_ROOT_PASSWORD
+      - DB_NAME=$DB_DB
+      - COMPRESSION=NONE
+      - ENABLE_CHECKSUM=FALSE
+      - CHECKSUM=SHA1
+      - DB_DUMP_BEGIN=0315
+      - DB_DUMP_FREQ=1440
+      - DB_CLEANUP_TIME=10080
+      - CREATE_LATEST_SYMLINK=TRUE
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
   traefik:
     external: true
-  nextcloud:
-
