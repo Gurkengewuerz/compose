@@ -169,7 +169,7 @@ services:
       - DEFAULT_CLEANUP_TIME=10080
 
       - DB01_TYPE=mongo
-      - DB01_MONGO_CUSTOM_URI=mongodb+srv://mongo
+      - DB01_HOST=mongo
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
