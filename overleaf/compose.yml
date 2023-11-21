@@ -2,25 +2,18 @@ version: "2.2"
 
 services:
   sharelatex:
-    restart: unless-stopped
-    image: tuetenk0pp/sharelatex-full:4.0.2
     container_name: sharelatex
+    image: tuetenk0pp/sharelatex-full:4.0.2
+    restart: unless-stopped
+    networks: [traefik]
     depends_on:
       mongo:
         condition: service_healthy
       redis:
         condition: service_started
-    links:
-      - mongo
-      - redis
+    links: [mongo, redis]
     volumes:
       - ${CONTAINER_DIR}/sharelatex:/var/lib/sharelatex
-    logging:
-      # limit logs retained on host to 25MB
-      driver: "json-file"
-      options:
-        max-size: "500k"
-        max-file: "50"
     environment:
       SHARELATEX_APP_NAME: $APP_NAME
       SHARELATEX_MONGO_URL: mongodb://mongo/sharelatex
@@ -101,20 +94,21 @@ services:
 
       # SHARELATEX_PROXY_LEARN: "true"
 
-    networks: [traefik, backend]
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.overleaf.entrypoints=websecure"
       - "traefik.http.routers.overleaf.rule=HOST(`$VIRTUAL_HOST`)"
-    #entrypoint: tail -f /dev/null
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   mongo:
-    restart: unless-stopped
     image: mongo:4.4
-    container_name: mongo
-    networks: [backend]
     command: "--replSet overleaf"
+    restart: unless-stopped
     volumes:
       - ${CONTAINER_DIR}/mongo:/data/db
     healthcheck:
@@ -123,17 +117,15 @@ services:
       timeout: 10s
       retries: 5
     logging:
-      # limit logs retained on host to 25MB
       driver: "json-file"
       options:
-        max-size: "500k"
-        max-file: "50"
+        max-size: "512k"
+        max-file: "1"
 
   mongoinit:
     image: mongo:4.4
     # this container will exit after executing the command
     restart: "no"
-    networks: [backend]
     depends_on:
       mongo:
         condition: service_healthy
@@ -147,20 +139,47 @@ services:
       ]
 
   redis:
-    restart: unless-stopped
     image: redis:5
-    container_name: redis
-    networks: [backend]
+    restart: unless-stopped
     volumes:
       - ${CONTAINER_DIR}/redis:/data
     logging:
-      # limit logs retained on host to 25MB
       driver: "json-file"
       options:
-        max-size: "500k"
-        max-file: "50"
+        max-size: "512k"
+        max-file: "1"
+
+  backup:
+    image: tiredofit/db-backup:4.0.19
+    restart: unless-stopped
+    depends_on: [mongo]
+    volumes:
+      - "${CONTAINER_DIR}/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      - DEFAULT_LOG_LEVEL=WARN
+
+      - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
+      - BACKUP_JOB_CONCURRENCY=1
+      - DEFAULT_CHECKSUM=NONE
+      - DEFAULT_COMPRESSION=NONE
+      - DEFAULT_BACKUP_INTERVAL=1440
+      - DEFAULT_BACKUP_BEGIN=0315
+      - DEFAULT_CLEANUP_TIME=10080
+
+      - DB01_TYPE=mongo
+      - DB01_MONGO_CUSTOM_URI=mongodb+srv://mongo
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
-  backend:
   traefik:
     external: true
