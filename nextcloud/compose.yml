@@ -17,7 +17,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      - ./data/db:/var/lib/mysql
+      - ${CONTAINER_DIR}/db:/var/lib/mysql
 
   nextcloud:
     image: nextcloud
@@ -49,7 +49,7 @@ services:
       - NEXTCLOUD_TRUSTED_DOMAINS=$VIRTUAL_HOST
       - TRUSTED_PROXIES=$TRUSTED_PROXIES
     volumes:
-      - ./data/nextcloud:/var/www/html
+      - ${CONTAINER_DIR}/nextcloud:/var/www/html
 
   redis:
     image: redis:latest
@@ -70,7 +70,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ./data/nextcloud:/var/www/html
+      - ${CONTAINER_DIR}/nextcloud:/var/www/html
 
 networks:
   traefik:

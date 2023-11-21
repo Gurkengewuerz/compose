@@ -4,8 +4,8 @@ services:
   web:
     image: nginx:alpine
     volumes:
-      - ./data/etc/nginx/:/etc/nginx/conf.d/
-      - ./data/web:/var/www/html
+      - ${CONTAINER_DIR}/etc/nginx/:/etc/nginx/conf.d/
+      - ${CONTAINER_DIR}/web:/var/www/html
     restart: unless-stopped
     networks: [traefik]
     labels:

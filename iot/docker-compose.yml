@@ -16,8 +16,8 @@ services:
     ports:
       - "8086:8086"
     volumes:
-      - ./data/influx/data:/var/lib/influxdb2
-      - ./data/influx/config:/etc/influxdb2
+      - ${CONTAINER_DIR}/influx/data:/var/lib/influxdb2
+      - ${CONTAINER_DIR}/influx/config:/etc/influxdb2
     ulimits:
       nofile:
         soft: 65536
@@ -36,7 +36,7 @@ services:
       #PATH_PERSISTENCE_FILE: "/config/storage"
     restart: unless-stopped
     volumes:
-      - ./data/mqtt:/config/
+      - ${CONTAINER_DIR}/mqtt:/config/
     ports:
       - "1882:1882"
       - "1883:1883"
@@ -58,9 +58,9 @@ services:
 #      - "9001:9001"
 #      - "1883:1883"
 #    volumes:
-#      - ./data/mosquitto/data:/mosquitto/data
-#      - ./data/mosquitto/config:/mosquitto/config
-#      - ./data/mosquitto/log:/mosquitto/log
+#      - ${CONTAINER_DIR}/mosquitto/data:/mosquitto/data
+#      - ${CONTAINER_DIR}/mosquitto/config:/mosquitto/config
+#      - ${CONTAINER_DIR}/mosquitto/log:/mosquitto/log
 #    logging:
 #      # limit logs retained on host to 25MB
 #      driver: "json-file"

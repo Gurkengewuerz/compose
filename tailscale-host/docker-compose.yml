@@ -5,7 +5,7 @@ services:
   client:
     image: tailscale/tailscale:latest
     volumes:
-      - ./data/tailscale:/var/lib
+      - ${CONTAINER_DIR}/tailscale:/var/lib
       - /dev/net/tun:/dev/net/tun
     logging:
       driver: json-file

@@ -6,7 +6,7 @@ services:
     image: reg.mc8051.de/jozsefsallai/fastbin-rewritten:latest
     restart: unless-stopped
     volumes:
-      - ./data:/app/storage
+      - ${CONTAINER_DIR}:/app/storage
     environment:
       - PORT=3000
       - NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -26,7 +26,7 @@ services:
       - "traefik.http.services.fastbin-srv.loadbalancer.server.scheme=http"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/"
+      - "backup.volumes=${CONTAINER_DIR}/"
 
 
 networks:

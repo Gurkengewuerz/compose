@@ -4,8 +4,8 @@ services:
   web:
     image: nginx:alpine
     volumes:
-      - ./data/etc/nginx/:/etc/nginx/conf.d/
-      - ./data/web:/var/www/html
+      - ${CONTAINER_DIR}/etc/nginx/:/etc/nginx/conf.d/
+      - ${CONTAINER_DIR}/web:/var/www/html
     restart: unless-stopped
     depends_on:
       - php
@@ -18,7 +18,7 @@ services:
       - "traefik.http.routers.lnmp.rule=HOST(`$VIRTUAL_HOST`) || HOST(`www.$VIRTUAL_HOST`) || HOST(`$VIRTUAL_HOST2`)"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/etc/nginx,./data/web"
+      - "backup.volumes=${CONTAINER_DIR}/etc/nginx,${CONTAINER_DIR}/web"
       - "backup.exclude=*/downloads/*,*/pma/*,*/ts3wi/*"
 
   php:
@@ -26,14 +26,14 @@ services:
     restart: unless-stopped
     networks: [lnmp]
     volumes:
-      - ./data/web:/var/www/html
+      - ${CONTAINER_DIR}/web:/var/www/html
 
   php7:
     image: chialab/php:7.4-fpm
     restart: unless-stopped
     networks: [lnmp]
     volumes:
-      - ./data/web:/var/www/html
+      - ${CONTAINER_DIR}/web:/var/www/html
 
   db:
     image: mariadb:10.9
@@ -42,7 +42,7 @@ services:
       MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
       MYSQL_DATABASE: default
     volumes:
-      - ./data/db:/var/lib/mysql
+      - ${CONTAINER_DIR}/db:/var/lib/mysql
     networks: [lnmp]
 
   backup:
@@ -50,7 +50,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ./data/db-backup:/backup
+      - ${CONTAINER_DIR}/db-backup:/backup
     environment:
       - TIMEZONE=UTC
       - DB_TYPE=mariadb
@@ -70,7 +70,7 @@ services:
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/db-backup"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
 
 networks:
   lnmp:

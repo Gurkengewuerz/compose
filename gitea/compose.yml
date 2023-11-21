@@ -11,9 +11,9 @@ services:
       - gitea
       - traefik
     volumes:
-      - ./data/gitea:/data
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
+      - "${CONTAINER_DIR}/gitea:/data"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     ports:
       - "222:22"
     depends_on:
@@ -27,7 +27,7 @@ services:
       - "traefik.http.services.gitea-srv.loadbalancer.server.port=3000"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/gitea"
+      - "backup.volumes=${CONTAINER_DIR}/gitea"
 
   db:
     image: mariadb:10.9
@@ -39,14 +39,14 @@ services:
       - MYSQL_DATABASE=gitea
     networks: [gitea]
     volumes:
-      - ./data/db:/var/lib/mysql
+      - "${CONTAINER_DIR}/db:/var/lib/mysql"
 
   backup:
     image: tiredofit/db-backup
     depends_on:
       - db
     volumes:
-      - ./data/db-backup:/backup
+      - "${CONTAINER_DIR}/db-backup:/backup"
     environment:
       - TIMEZONE=UTC
       - DB_TYPE=mariadb
@@ -66,7 +66,7 @@ services:
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/db-backup"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
 
 networks:
   gitea:

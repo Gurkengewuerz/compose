@@ -9,7 +9,7 @@ services:
       - UID=1000
       - GID=1000
     volumes:
-      - ./data/synapse:/data
+      - ${CONTAINER_DIR}/synapse:/data
     networks: [traefik]
     labels:
       - "traefik.enable=true"
@@ -20,7 +20,7 @@ services:
       - "traefik.http.services.synapse-srv.loadbalancer.server.port=8008"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/synapse"
+      - "backup.volumes=${CONTAINER_DIR}/synapse"
     logging:
       driver: json-file
       options:

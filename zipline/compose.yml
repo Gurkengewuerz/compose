@@ -10,7 +10,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DATABASE=postgres
     volumes:
-      - "$DATA_DIR/postgres:/var/lib/postgresql/data"
+      - "${CONTAINER_DIR}/postgres:/var/lib/postgresql/data"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -35,8 +35,8 @@ services:
       - FEATURES_USER_REGISTRATION=$ENABLE_REGISTRATION
       - FEATURES_ROBOTS_TXT=true
     volumes:
-      - "$DATA_DIR/zipline/uploads:/zipline/uploads"
-      - "$DATA_DIR/zipline/public:/zipline/public"
+      - "${CONTAINER_DIR}/zipline/uploads:/zipline/uploads"
+      - "${CONTAINER_DIR}/zipline/public:/zipline/public"
     depends_on:
       - postgres
     networks:
@@ -51,13 +51,13 @@ services:
       - "traefik.http.services.zipline-srv.loadbalancer.server.port=3000"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=${DATA_DIR}/zipline/uploads,${DATA_DIR}/zipline/public"
+      - "backup.volumes=${CONTAINER_DIR}/zipline/upl${CONTAINER_DIR}_DIR}/zipline/public"
 
   backup:
     image: tiredofit/db-backup
     restart: $RESTART_POLICY
     volumes:
-      - "$DATA_DIR/db-backup:/backup"
+      - "${CONTAINER_DIR}/db-backup:/backup"
     environment:
       - TIMEZONE=UTC
       - DB_TYPE=pgsql
@@ -77,7 +77,7 @@ services:
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=${DATA_DIR}/db-backup"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
     
 
 networks:

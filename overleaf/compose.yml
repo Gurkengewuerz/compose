@@ -15,7 +15,7 @@ services:
             - mongo
             - redis
         volumes:
-            - ./data/sharelatex:/var/lib/sharelatex
+            - ${CONTAINER_DIR}/sharelatex:/var/lib/sharelatex
         logging:
             # limit logs retained on host to 25MB
             driver: "json-file"
@@ -120,7 +120,7 @@ services:
         networks: [backend]
         command: "--replSet overleaf"
         volumes:
-          - ./data/mongo:/data/db
+          - ${CONTAINER_DIR}/mongo:/data/db
         healthcheck:
           test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet
           interval: 10s
@@ -156,7 +156,7 @@ services:
         container_name: redis
         networks: [backend]
         volumes:
-            - ./data/redis:/data
+            - ${CONTAINER_DIR}/redis:/data
         logging:
             # limit logs retained on host to 25MB
             driver: "json-file"

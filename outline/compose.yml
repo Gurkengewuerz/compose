@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - "./data/outline:/var/lib/outline/data"
+      - "${CONTAINER_DIR}/outline:/var/lib/outline/data"
     depends_on:
       - db
       - redis
@@ -15,7 +15,7 @@ services:
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/outline"
+      - "backup.volumes=${CONTAINER_DIR}/outline"
       
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - "./data/postgres/data:/var/lib/postgresql/data"
+      - "${CONTAINER_DIR}/postgres/data:/var/lib/postgresql/data"
       - "/etc/localtime:/etc/localtime:ro"
       - "/etc/timezone:/etc/timezone:ro"
     networks: [backend]
@@ -74,7 +74,7 @@ services:
     depends_on:
       - db
     volumes:
-      - "./data/postgres/backup:/backup"
+      - "${CONTAINER_DIR}/postgres/backup:/backup"
     environment:
       - TIMEZONE=UTC
       - DB_TYPE=postgres
@@ -93,7 +93,7 @@ services:
     labels:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=./data/postgres/backup"
+      - "backup.volumes=${CONTAINER_DIR}/postgres/backup"
 
 networks:
   traefik:

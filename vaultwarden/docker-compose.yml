@@ -39,4 +39,4 @@ services:
         max-size: "500k"
         max-file: "50"
     volumes:
-      - ./data:/data
+      - ${CONTAINER_DIR}:/data

@@ -120,7 +120,7 @@ services:
       MARIADB_USER: strapi
       MARIADB_PASSWORD: strapi
     volumes:
-      - "${DATA_DIR}/mariadb:/var/lib/mysql"
+      - "${CONTAINER_DIR}/mariadb:/var/lib/mysql"
   
 networks:
   postmaster:

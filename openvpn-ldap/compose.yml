@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     networks: [ldap]
     volumes:
-      - ./data/conf:/etc/openvpn
+      - ${CONTAINER_DIR}/conf:/etc/openvpn
     environment:
       - OVPN_SERVER_CN=$OVPN_SERVER_CN
       - LDAP_URI=ldaps://samba

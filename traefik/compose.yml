@@ -24,7 +24,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/traefik.yml:ro
       - ./config:/etc/traefik/config:ro
-      - ./data/certificates:/var/certificates
+      - ${CONTAINER_DIR}/certificates:/var/certificates
     environment:
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_EMAIL: $ACME_MAIL
     labels:

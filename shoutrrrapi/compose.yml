@@ -6,7 +6,7 @@ services:
     image: ghcr.io/gurkengewuerz/shoutrrr-api:develop
     container_name: shoutrrr-api
     volumes:
-      - "./data/config.yml:/app/config.yml:ro"
+      - "${CONTAINER_DIR}/config.yml:/app/config.yml:ro"
     restart: unless-stopped
     networks: [traefik, notify]
     labels:

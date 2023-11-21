@@ -31,8 +31,8 @@ services:
       SFTPGO_SMTP__PASSWORD: $SMTP_PASSWORD
       SFTPGO_SMTP__ENCRYPTION: $SMTP_ENCRYPTION
     volumes:
-      - "${DATA_DIR}/sftpgo/data:/srv/sftpgo/data"
-      - "${DATA_DIR}/sftpgo/config:/var/lib/sftpgo"
+      - "${CONTAINER_DIR}/sftpgo/data:/srv/sftpgo/data"
+      - "${CONTAINER_DIR}/sftpgo/config:/var/lib/sftpgo"
     ports:
       - "8099:8080/tcp"
       - "2222:2222/tcp"

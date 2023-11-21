@@ -7,8 +7,8 @@ services:
   headscale:
     image: headscale/headscale:latest
     volumes:
-      - ./data/headscale/config:/etc/headscale
-      - ./data/headscale/data:/var/lib/headscale
+      - ${CONTAINER_DIR}/headscale/config:/etc/headscale
+      - ${CONTAINER_DIR}/headscale/data:/var/lib/headscale
     logging:
       driver: json-file
       options:
@@ -38,8 +38,8 @@ services:
       - AUTH_TYPE=
       - LOG_LEVEL=info
     volumes:
-      - ./data/headscale-web/:/data
-      - ./data/headscale/config/:/etc/headscale/:ro
+      - ${CONTAINER_DIR}/headscale-web/:/data
+      - ${CONTAINER_DIR}/headscale/config/:/etc/headscale/:ro
     logging:
       driver: json-file
       options:

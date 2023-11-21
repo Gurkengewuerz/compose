@@ -11,7 +11,7 @@ services:
       - PASSWORD=$PASSWORD
       - SUDO_PASSWORD=$SUDO_PASSWORD
     volumes:
-      - ./data/coder/config:/config
+      - "${CONTAINER_DIR}/coder/config:/config"
     restart: unless-stopped
     labels:
       - "traefik.enable=true"

@@ -13,5 +13,5 @@ services:
       - DRSS_BOT_ACTIVITYNAME=$BOT_ACTIVITYNAME
       - DRSS_BOT_OWNERIDS=$BOT_OWNERIDS
     volumes:
-      - ./data/drss:/db
+      - ${CONTAINER_DIR}/drss:/db
 

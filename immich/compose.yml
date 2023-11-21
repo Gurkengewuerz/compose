@@ -44,7 +44,7 @@ services:
     image: ghcr.io/immich-app/immich-machine-learning:release
     volumes:
       - ${UPLOAD_LOCATION}:/usr/src/app/upload
-      - ./data/model-cache:/cache
+      - ${CONTAINER_DIR}/model-cache:/cache
     env_file:
       - .env
     restart: unless-stopped
@@ -59,7 +59,7 @@ services:
     logging:
       driver: none
     volumes:
-      - ./data/typesense:/data
+      - ${CONTAINER_DIR}/typesense:/data
     restart: unless-stopped
     networks: [immich]
 
@@ -80,7 +80,7 @@ services:
       POSTGRES_DB: ${DB_DATABASE_NAME}
       PG_DATA: /var/lib/postgresql/data
     volumes:
-      - ./data/pgdata:/var/lib/postgresql/data
+      - ${CONTAINER_DIR}/pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     networks: [immich]
 

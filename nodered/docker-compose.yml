@@ -10,7 +10,7 @@ services:
       - "1880:1880"
       - "3009:3001"
     volumes:
-      - ./data:/data
+      - ${CONTAINER_DIR}:/data
     logging:
       # limit logs retained on host to 25MB
       driver: "json-file"
