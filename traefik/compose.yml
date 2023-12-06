@@ -34,6 +34,8 @@ services:
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=traefik-auth"
       - "traefik.http.middlewares.traefik-auth.basicauth.users=${DASHBOARD_USERNAME}:${DASHBOARD_PASSWORD}"
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
     logging:
       driver: "json-file"
       options:
