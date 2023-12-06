@@ -5,7 +5,7 @@ services:
     container_name: sharelatex
     image: tuetenk0pp/sharelatex-full:4.0.2
     restart: unless-stopped
-    networks: [traefik]
+    networks: [default, traefik]
     depends_on:
       mongo:
         condition: service_healthy
