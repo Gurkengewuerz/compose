@@ -100,7 +100,6 @@ services:
       - traefik
       - default
       - webmail
-      - radicale
     volumes:
       - "${DATA_DIR}/certs:/certs"
       - "${DATA_DIR}/overrides/nginx:/overrides:ro"
@@ -239,15 +238,6 @@ services:
         max-size: "50m"
 
   # Optional services
-
-  webdav:
-    image: ${DOCKER_ORG:-ghcr.io/mailu}/${DOCKER_PREFIX:-}radicale:${MAILU_VERSION}
-    restart: $RESTART_POLICY
-    volumes:
-      - "${DATA_DIR}/dav:/data"
-    networks:
-      - radicale
-
   fetchmail:
     image: ${DOCKER_ORG:-ghcr.io/mailu}/${DOCKER_PREFIX:-}fetchmail:${MAILU_VERSION}
     restart: $RESTART_POLICY
@@ -284,13 +274,10 @@ networks:
       config:
         - subnet: 192.168.203.0/24
         - subnet: fd90:6937:741e:beef::/64
-  radicale:
-    driver: bridge
   webmail:
     driver: bridge
   noinet:
     driver: bridge
     internal: true
-
   traefik:
     external: true
