@@ -1,0 +1,118 @@
+services:
+  museum:
+    image: ghcr.io/ente-io/server
+    restart: unless-stopped
+    volumes:
+      - "$CONTAINER_DIR/logs:/var/logs"
+      # https://github.com/ente-io/ente/blob/main/server/configurations/local.yaml
+      - "$CONTAINER_DIR/museum.yaml:/museum.yaml:ro"
+      - "./scripts/compose/credentials.yaml:/credentials.yaml:ro"
+      - "$CONTAINER_DIR/data:/data:ro"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Pass-in the config to connect to the DB and MinIO
+      ENTE_CREDENTIALS_FILE: /credentials.yaml
+    networks:
+      - internal
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      - "traefik.http.routers.ente.entrypoints=websecure"
+      - "traefik.http.routers.ente.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.ente.service=ente"
+      - "traefik.http.services.ente.loadbalancer.server.port=8080"
+
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=$CONTAINER_DIR/data"
+
+
+  # Resolve "localhost:3200" in the museum container to the minio container.
+  socat:
+    image: alpine/socat
+    command: "TCP-LISTEN:3200,fork,reuseaddr TCP:minio:3200"
+    restart: unless-stopped
+    network_mode: service:museum
+    depends_on: [museum]
+
+  postgres:
+    image: postgres:12
+    restart: unless-stopped
+    volumes:
+      - "$CONTAINER_DIR/postgres:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pgpass
+      POSTGRES_DB: ente_db
+    # Wait for postgres to be accept connections before starting museum.
+    healthcheck:
+      test: ["CMD","pg_isready","-q","-d","ente_db","-U","pguser"]
+      interval: 1s
+      timeout: 5s
+      retries: 20
+    networks:
+      - internal
+
+  minio:
+    image: minio/minio
+    command: server /data --address ":3200" --console-address ":3201"
+    restart: unless-stopped
+    volumes:
+      - "$CONTAINER_DIR/minio:/data"
+    environment:
+      MINIO_ROOT_USER: test
+      MINIO_ROOT_PASSWORD: testtest
+    networks:
+      - internal
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=$CONTAINER_DIR/minio"
+
+  minio-provision:
+    image: minio/mc
+    depends_on: [minio]
+    volumes:
+      - "./scripts/compose/minio-provision.sh:/provision.sh:ro"
+      - "$CONTAINER_DIR/minio:/data"
+    networks:
+      - internal
+    entrypoint: sh /provision.sh
+
+  backup:
+    image: tiredofit/db-backup:4.0.19
+    restart: unless-stopped
+    depends_on: [postgres]
+    volumes:
+      - "$CONTAINER_DIR/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      - DEFAULT_LOG_LEVEL=WARN
+
+      - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
+      - BACKUP_JOB_CONCURRENCY=1
+      - DEFAULT_CHECKSUM=NONE
+      - DEFAULT_COMPRESSION=NONE
+      - DEFAULT_BACKUP_INTERVAL=1440
+      - DEFAULT_BACKUP_BEGIN=0315
+      - DEFAULT_CLEANUP_TIME=10080
+
+      - DB01_TYPE=postgres
+      - DB01_HOST=postgres
+      - DB01_NAME=ente_db
+      - DB01_USER=pguser
+      - DB01_PASS=pgpass
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=$CONTAINER_DIR/db-backup"
+
+networks:
+  traefik:
+    external: true
+  internal:
