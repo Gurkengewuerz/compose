@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   synapse:
-    image: matrixdotorg/synapse:v1.87.0rc1
+    image: matrixdotorg/synapse:v1.104.0
     restart: unless-stopped
     networks: [traefik]
     volumes:
