@@ -9,9 +9,12 @@
 # 0 4 * * * /usr/bin/python3 /home/user/deployment/docker-backup.py > /tmp/backup.log
 
 import subprocess
+# pip install docker
 import docker
 import os
 import sys
+# pip install requests
+import requests
 
 # pip install python-dotenv
 from dotenv import dotenv_values
@@ -56,6 +59,25 @@ def shell():
   print("**********************************")
   subprocess.run(["bash"], env=resticENV, start_new_session=True)
 
+def send_notification(failed, msg):
+  print("Sending Notification")
+  # https://github.com/Gurkengewuerz/shoutrrr-api
+  shout_api = RESTIC_VARS.get("SHOUTRRR_API", "").strip()
+  shout_token = RESTIC_VARS.get("SHOUTRRR_TOKEN", "").strip()
+  if not shout_api or not shout_token:
+    print("pass send_notification() due to no SHOUTRRR API defined")
+    return
+  hostname = os.uname()[1]
+  f_name = os.path.basename(__file__)
+  title = f"{f_name} - {hostname}"
+  if failed:
+    title = "FAILED: " + title
+  try:
+    r = requests.post(f"{shout_api}/{shout_token}", json={"title": title, "message": msg})
+    r.raise_for_status()
+  except Error as err:
+    print("Failed to send Notification", err)
+
 def run():
   client = docker.APIClient(base_url='unix://var/run/docker.sock')
   
@@ -96,7 +118,7 @@ def run():
       print("Failure: Password is missing. Skipping.")
       counter["failed"] += 1
       continue
-
+    
     toUpdate = []
     if LABEL_NAMES["volumes"] not in labels:
       for mount in mounts:
@@ -164,11 +186,16 @@ def run():
   print()
   print("Backup Stats")
   print("####################")
-  print("Total processed: {}".format(counter["total"]))
-  print("Skipped: {}".format(counter["skipped"]))
-  print("Failed: {}".format(counter["failed"]))
-  print("Successfully backuped: {}".format(counter["success"]))
-  
+
+  stats = "Total processed: {}\n".format(counter["total"])
+  stats = stats + "Skipped: {}\n".format(counter["skipped"])
+  stats = stats + "Failed: {}\n".format(counter["failed"])
+  stats = stats + "Successfully backuped: {}\n".format(counter["success"])
+
+  print(stats)
+
+  send_notification(counter["failed"] > 0, stats)
+
 if __name__ == '__main__':
   if len(sys.argv) == 3 and sys.argv[1] == "shell":
     shell()
