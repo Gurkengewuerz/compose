@@ -33,6 +33,9 @@ services:
     entrypoint: ["/bin/sh", "./start-microservices.sh"]
     command: ["start-microservices.sh"]
     restart: unless-stopped
+    extends:
+      file: hwaccel.transcoding.yml
+      service: $HWACCEL
     volumes:
       - ${UPLOAD_LOCATION}:/usr/src/app/upload
     env_file:
