@@ -48,7 +48,6 @@ services:
       - "traefik.http.services.postmaster-backend-srv.loadbalancer.server.port=1337"
 
       - "traefik.http.middlewares.postmaster-backend-strip.stripprefix.prefixes=$CMS_PATH"
-      - "traefik.http.middlewares.postmaster-backend-strip.stripprefix.forceslash=false"
     logging:
       driver: "json-file"
       options:

@@ -52,6 +52,3 @@ api:
 metrics:
   prometheus: 
     entryPoint: dashboard
-
-experimental:
-  http3: true
