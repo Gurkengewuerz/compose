@@ -94,7 +94,8 @@ def run():
     labels = container["Labels"]
     mounts = container["Mounts"]
     workdirs = labels["com.docker.compose.project.working_dir"]
-    
+    composefile = labels["com.docker.compose.project.config_files"]
+
     for _ in range(5):
       print()
 
@@ -119,7 +120,7 @@ def run():
       counter["failed"] += 1
       continue
     
-    toUpdate = []
+    toUpdate = [composefile]
     if LABEL_NAMES["volumes"] not in labels:
       for mount in mounts:
         toUpdate.append(mount["Source"])
@@ -131,7 +132,7 @@ def run():
             toUpdate.append(mount["Source"])
           if "Name" in mount and mount["Name"].endswith(path):
             toUpdate.append(mount["Source"])
-    
+   
     keep_last = "14"
     if LABEL_NAMES["keep"] in labels:
       if isinstance(labels[LABEL_NAMES["keep"]], int):
