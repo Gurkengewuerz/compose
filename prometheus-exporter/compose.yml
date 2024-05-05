@@ -1,0 +1,39 @@
+services:
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    restart: unless-stopped
+    privileged: true
+    networks: [traefik]
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:ro"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+      - "/dev/disk/:/dev/disk:ro"
+    devices:
+      - "/dev/kmsg:/dev/kmsg"
+    environment:
+      - CADVISOR_HEALTHCHECK_URL=http://localhost:8080/metrics-external/cadvisor/healthz
+    command:
+      - '--url_base_prefix=/metrics-external/cadvisor'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      - "traefik.http.middlewares.metrics-auth.basicauth.users=prometheus:${AUTH_PASS}"
+
+      - "traefik.http.routers.prom-cadvisor.rule=Host(`$VIRTUAL_HOST`) && PathPrefix(`/metrics-external/cadvisor`)"
+      - "traefik.http.routers.prom-cadvisor.entryPoints=websecure"
+      - "traefik.http.routers.prom-cadvisor.service=prom-cadvisor-service"
+      - "traefik.http.services.prom-cadvisor-service.loadbalancer.server.port=8080"
+      - "traefik.http.routers.prom-cadvisor.middlewares=metrics-auth"
+
+      - "traefik.http.routers.traefik-metrics.rule=Host(`$VIRTUAL_HOST`) && PathPrefix(`/metrics-external/traefik`)"
+      - "traefik.http.routers.traefik-metrics.entrypoints=websecure"
+      - "traefik.http.routers.traefik-metrics.service=prometheus@internal"
+      - "traefik.http.routers.traefik-metrics.middlewares=metrics-auth"
+
+networks:
+  traefik:
+    external: true
