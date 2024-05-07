@@ -192,7 +192,7 @@ def run():
     excludeList = []
     if LABEL_NAMES["exclude"] in labels:
       for f in labels[LABEL_NAMES["exclude"]].split(","):
-        excludeList.append("--exclude '{}'".format(f))
+        excludeList.append("--glob '{}'".format(f))
     
     print("Running Backup")
     cmd = [BACKUP_BIN, "backup", "--tag", name, *excludeList, *toUpdate]
