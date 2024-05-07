@@ -1,0 +1,27 @@
+services:
+
+  adguardhome:
+    image: adguard/adguardhome
+    restart: unless-stopped
+    networks: [traefik]
+    ports:
+      - "0.0.0.0:53:53/tcp"
+      - "0.0.0.0:53:53/udp"
+      - "[::]:53:53/tcp"
+      - "[::]:53:53/udp"
+      - "784:784/udp"
+      - "853:853/tcp"
+    volumes:
+      - $CONTAINER_DIR/adguard/work:/opt/adguardhome/work
+      - $CONTAINER_DIR/adguard/conf:/opt/adguardhome/conf
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.adguard.entrypoints=web"
+      - "traefik.http.routers.adguard.rule=Host(`${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.adguard.priority=100"
+      - "traefik.http.services.adguard.loadbalancer.server.port=3000"
+
+networks:
+  traefik:
+    external: true
