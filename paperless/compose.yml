@@ -1,0 +1,59 @@
+services:
+
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on: [db, broker]
+    networks: [traefik, default]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - $CONTAINER_DIR/paperless/data:/usr/src/paperless/data
+      - $CONTAINER_DIR/paperless/media:/usr/src/paperless/media
+      - $CONTAINER_DIR/paperless/export:/usr/src/paperless/export
+      - $CONTAINER_DIR/paperless/consume:/usr/src/paperless/consume
+    env_file: .env
+    environment:
+      - "PAPERLESS_REDIS=redis://broker:6379"
+      - "PAPERLESS_DBENGINE=mariadb"
+      - "PAPERLESS_DBHOST=db"
+      - "PAPERLESS_DBUSER=paperless"
+      - "PAPERLESS_DBNAME=paperless"
+      - "PAPERLESS_DBPASS=paperless"
+      - "PAPERLESS_DBPORT=3306"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.paperless.entrypoints=websecure"
+      - "traefik.http.routers.paperless.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.paperless.service=paperless-srv"
+      - "traefik.http.services.paperless-srv.loadbalancer.server.port=8000"
+
+  db:
+    image: mariadb:10.9
+    restart: unless-stopped
+    volumes:
+      - $CONTAINER_DIR/db:/var/lib/mysql
+    environment:
+      - "MARIADB_ROOT_PASSWORD=root"
+      - "MARIADB_USER=paperless"
+      - "MARIADB_DATABASE=paperless"
+      - "MARIADB_PASSWORD=paperless"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  broker:
+    image: docker.io/library/redis:7
+    restart: unless-stopped
+    volumes:
+      - $CONTAINER_DIR/redis/data:/data
+
+networks:
+  traefik:
+    external: true
