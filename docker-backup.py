@@ -8,17 +8,20 @@
 
 # 0 4 * * * /usr/bin/python3 /home/user/deployment/docker-backup.py > /tmp/backup.log
 
-import subprocess
 # pip install docker
 import docker
-import os
-import sys
 # pip install requests
 import requests
+import os
+import subprocess
+import sys
 
 # pip install python-dotenv
 from dotenv import dotenv_values
+# pip install webdavclient3
+from webdav3.client import Client
 from getpass import getpass
+from urllib.parse import urlparse
 
 ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 
@@ -26,20 +29,42 @@ if not os.path.isfile(ENV_PATH) or not os.access(ENV_PATH, os.R_OK):
   print(f"Failure: reading {ENV_PATH} failed")
   sys.exit(1)
 
-# Requires
-# RESTIC_BIN /usr/bin/restic
-# RESTIC_REPOSITORY s3:https://s3.amazonaws.com/restic
-# AWS_ACCESS_KEY_ID
-# AWS_SECRET_ACCESS_KEY
-RESTIC_VARS = dotenv_values(ENV_PATH)
+VIRTENV_VARS = dotenv_values(ENV_PATH)
 
-RESTIC_BIN = RESTIC_VARS.pop("RESTIC_BIN", None)
-if RESTIC_BIN is None or not os.path.isfile(RESTIC_BIN):
-  print(f"Failure: restic bin {RESTIC_BIN} not exists or set in .env RESTIC_BIN")
+BACKUP_BIN = VIRTENV_VARS["BACKUP_BIN"]
+if BACKUP_BIN is None or BACKUP_BIN == "":
+  print(f"Failure: binary {BACKUP_BIN} not found")
   sys.exit(1)
-if not os.access(RESTIC_BIN, os.R_OK) or not os.access(RESTIC_BIN, os.X_OK):
-  print(f"Failure: wrong permissions on {RESTIC_BIN}")
+if not os.access(BACKUP_BIN, os.R_OK) or not os.access(BACKUP_BIN, os.X_OK):
+  print(f"Failure: wrong permissions on {BACKUP_BIN}")
   sys.exit(1)
+
+if VIRTENV_VARS["WEBDAV_REPO"] is None or VIRTENV_VARS["WEBDAV_REPO"] == "":
+  print(f"Failure: could not find WEBDAV_REPO in .env")
+  sys.exit(1)
+
+webdav = urlparse(VIRTENV_VARS["WEBDAV_REPO"])
+
+webdav_protocol = webdav.scheme
+webdav_username = webdav.username
+webdav_password = webdav.password
+webdav_netloc = webdav.netloc
+webdav_path = webdav.path.rstrip("/")
+
+webdav_opt = {}
+
+if webdav_username and webdav_password:
+    webdav_netloc = webdav_netloc.replace(f"{webdav_username}:{webdav_password}@", "")
+    VIRTENV_VARS["OPENDAL_USERNAME"] = webdav_username
+    VIRTENV_VARS["OPENDAL_PASSWORD"] = webdav_password
+    webdav_opt["webdav_login"] = webdav_username
+    webdav_opt["webdav_password"] = webdav_password
+
+VIRTENV_VARS["RUSTIC_REPOSITORY"] = "opendal:webdav"
+VIRTENV_VARS["WEBDAV_REPO"] = f"{webdav_protocol}://{webdav_netloc}{webdav_path}"
+webdav_opt["webdav_hostname"] = VIRTENV_VARS["WEBDAV_REPO"]
+
+webdav_client = Client(webdav_opt)
 
 LABEL_NAMES = {
   "enabled": "backup.enable",
@@ -50,20 +75,20 @@ LABEL_NAMES = {
 }
 
 def shell():
-  repo_url = "{}/{}".format(RESTIC_VARS["RESTIC_REPOSITORY"], sys.argv[2])
-  print("Using restic repository", repo_url)
+  repo_url = "{}/{}".format(VIRTENV_VARS["WEBDAV_REPO"], sys.argv[2])
+  print("Using repository", repo_url)
   password = getpass("Repository Password: ")
-  resticENV = {**os.environ, **RESTIC_VARS, "RESTIC_PASSWORD": password, "RESTIC_REPOSITORY": repo_url}
+  processEnv = {**os.environ, **VIRTENV_VARS, "RUSTIC_PASSWORD": password, "OPENDAL_ENDPOINT": repo_url}
   print("**********************************")
-  print("You have entered a new shell with the correct restic enviroment variables")
+  print("You have entered a new shell with the correct enviroment variables")
   print("**********************************")
-  subprocess.run(["bash"], env=resticENV, start_new_session=True)
+  subprocess.run(["bash"], env=processEnv, start_new_session=True)
 
 def send_notification(failed, msg):
   print("Sending Notification")
   # https://github.com/Gurkengewuerz/shoutrrr-api
-  shout_api = RESTIC_VARS.get("SHOUTRRR_API", "").strip()
-  shout_token = RESTIC_VARS.get("SHOUTRRR_TOKEN", "").strip()
+  shout_api = VIRTENV_VARS.get("SHOUTRRR_API", "").strip()
+  shout_token = VIRTENV_VARS.get("SHOUTRRR_TOKEN", "").strip()
   if not shout_api or not shout_token:
     print("pass send_notification() due to no SHOUTRRR API defined")
     return
@@ -142,40 +167,46 @@ def run():
     else:
       print("Defaulting to keep last {} backups".format(keep_last))
 
-    repo_url = "{}/{}".format(RESTIC_VARS["RESTIC_REPOSITORY"], name)
+    repo_url = "{}/{}".format(VIRTENV_VARS["WEBDAV_REPO"], name)
     print("Repository URL:", repo_url)
 
-    resticENV = {**os.environ, **RESTIC_VARS, "RESTIC_PASSWORD": labels[LABEL_NAMES["password"]], "RESTIC_REPOSITORY": repo_url}
+    processEnv = {**os.environ, **VIRTENV_VARS, "RUSTIC_PASSWORD": labels[LABEL_NAMES["password"]], "OPENDAL_ENDPOINT": repo_url}
     
-    process = subprocess.run(" ".join([RESTIC_BIN, "cat", "config"]), env=resticENV, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if not webdav_client.check(name):
+      try:
+        webdav_client.execute_request("mkdir", name)
+      except:
+        pass
+
+    ## rustic doesn't has return codes, so just try to init
+    cmd = [BACKUP_BIN, "init"]
+    print("Run init: {}".format(" ".join(cmd)))
+    process = subprocess.run(" ".join(cmd), env=processEnv, shell=True)
     if process.returncode == 0:
-      print("Info: restic repository already initialized.")
+      print("Success: autoinitialize repository")
     else:
-      print("Warn: restic repository not initialized. autoinitialize now")
-      process = subprocess.run(" ".join([RESTIC_BIN, "init"]), env=resticENV, shell=True)
-      if process.returncode == 0:
-        print("Success: autoinitialize repository")
-      else:
-        print("Failure: autoinitialize failed")
-        counter["failed"] += 1
-        continue
+      print("Failure: autoinitialize failed")
+      counter["failed"] += 1
+      continue
     
     excludeList = []
     if LABEL_NAMES["exclude"] in labels:
       for f in labels[LABEL_NAMES["exclude"]].split(","):
         excludeList.append("--exclude '{}'".format(f))
     
-    cmd = [RESTIC_BIN, "backup", "--tag", name, *excludeList, *toUpdate]
+    print("Running Backup")
+    cmd = [BACKUP_BIN, "backup", "--tag", name, *excludeList, *toUpdate]
     print("Run backup: {}".format(" ".join(cmd)))
-    process = subprocess.run(" ".join(cmd), env=resticENV, shell=True)
+    process = subprocess.run(" ".join(cmd), env=processEnv, shell=True)
     if process.returncode == 0:
       print("Success: Backup ran successfully. A failure would be not great but not terrible")
     else:
       print("Failure: failed to backup")
       counter["failed"] += 1
       continue
-
-    process = subprocess.run(" ".join([RESTIC_BIN, "forget", "--keep-last", keep_last, "--prune"]), env=resticENV, shell=True)
+    
+    print("Pruning keep last {} backups".format(keep_last))
+    process = subprocess.run(" ".join([BACKUP_BIN, "forget", "--keep-last", keep_last, "--prune"]), env=processEnv, shell=True)
     if process.returncode == 0:
       print("Success: removed unwanted snapshots")
     else:
