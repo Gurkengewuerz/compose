@@ -1,0 +1,14 @@
+services:
+  telegraf:
+    image: telegraf:latest
+    group_add:
+      - "$DOCKER_GROUP"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --config $INFLUX_CONFIG
+    environment:
+      - HOST_MOUNT_PREFIX=/rootfs
+      - HOST_PROC=/rootfs/proc
+      - INFLUX_TOKEN=$INFLUX_TOKEN
+
