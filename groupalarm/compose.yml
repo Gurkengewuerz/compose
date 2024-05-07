@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   groupalarm:
     image: reg.mc8051.de/mc8051/groupalarm
