@@ -1,11 +1,10 @@
-version: "3.8"
-
 services:
   influx:
     image: influxdb:alpine
     restart: unless-stopped
     ports:
       - "8086:8086"
+    networks: [traefik, default]
     volumes:
       - ${CONTAINER_DIR}/influx/data:/var/lib/influxdb2
       - ${CONTAINER_DIR}/influx/config:/etc/influxdb2
@@ -21,6 +20,13 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.influx.entrypoints=websecure"
+      - "traefik.http.routers.influx.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.influx.service=influx-srv"
+      - "traefik.http.services.influx-srv.loadbalancer.server.port=8086"
     logging:
       driver: "json-file"
       options:
@@ -63,3 +69,7 @@ services:
 #      options:
 #        max-size: "512k"
 #        max-file: "1"
+
+networks:
+  traefik:
+    external: true
