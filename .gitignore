@@ -9,3 +9,4 @@ db.env
 backups
 keycloak/themes
 keycloak/providers
+traefik/config/custom.yml

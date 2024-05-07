@@ -1,0 +1,29 @@
+services:
+
+  samba:
+    image: ghcr.io/crazy-max/samba:4.16.8
+    container_name: samba
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - $CONTAINER_DIR/smb:/data
+      - $SAMBA_MOUNT:/mnt
+    environment:
+      - "TZ=$TIMEZONE"
+      - "SAMBA_LOG_LEVEL=0"
+
+  wsdd:
+    image: jonasped/wsdd
+    container_name: samba-wsdd
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - "HOSTNAME=$HOSTNAME"
+
+  avahi:
+    image: ydkn/avahi
+    hostname: $HOSTNAME
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./avahi-services:/etc/avahi/services:ro
