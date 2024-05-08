@@ -1,14 +1,11 @@
-version: "3.8"
-
 services:
   sftpgo:
     image: "drakkan/sftpgo:plugins"
     user: "1000"
     restart: unless-stopped
+    networks: [traefik]
     ports:
-      - "8099:8080/tcp"
       - "2222:2222/tcp"
-      - "5007:5007/tcp"
     volumes:
       - "${CONTAINER_DIR}/sftpgo/data:/srv/sftpgo/data"
       - "${CONTAINER_DIR}/sftpgo/config:/var/lib/sftpgo"
@@ -36,8 +33,25 @@ services:
       SFTPGO_SMTP__USER: $SMTP_USER
       SFTPGO_SMTP__PASSWORD: $SMTP_PASSWORD
       SFTPGO_SMTP__ENCRYPTION: $SMTP_ENCRYPTION
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.ui-webdav.entryPoints=websecure"
+      - "traefik.http.routers.ui-webdav.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.ui-webdav.service=ui-webdav"
+      - "traefik.http.services.ui-webdav.loadbalancer.server.port=8080"
+
+      - "traefik.http.routers.webdav.entryPoints=websecure"
+      - "traefik.http.routers.webdav.rule=Host(`$VIRTUAL_HOST`) && PathPrefix(`/dav`)"
+      - "traefik.http.routers.webdav.service=webdav"
+      - "traefik.http.services.webdav.loadbalancer.server.port=5007"
+
     logging:
       driver: "json-file"
       options:
         max-size: "1m"
         max-file: "1"
+
+networks:
+  traefik:
+    external: true
