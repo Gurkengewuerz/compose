@@ -1,9 +1,7 @@
-version: '3.7'
-
 services:
 
   unifi-db:
-    image: docker.io/mongo:4.4.3
+    image: docker.io/mongo:7
     container_name: unifi-db
     volumes:
       - $CONTAINER_DIR/db:/data/db
@@ -16,7 +14,7 @@ services:
         max-file: "1"
 
   unifi-network-application:
-    image: lscr.io/linuxserver/unifi-network-application:8.0.7
+    image: lscr.io/linuxserver/unifi-network-application:8.1.127
     container_name: unifi-network-application
     environment:
       - PUID=1000
@@ -34,15 +32,33 @@ services:
     volumes:
       - $CONTAINER_DIR/unifi:/config
     ports:
-      - 8443:8443
-      - 3478:3478/udp
-      - 10001:10001/udp
-      - 8080:8080
-      #- 1900:1900/udp #optional
-      - 8843:8843 #optional
-      - 8880:8880 #optional
-      - 6789:6789 #optional
-      - 5514:5514/udp #optional
+      # Required for 'Make controller discoverable on L2 network' option
+      - "0.0.0.0:1900:1900/udp"
+      - "[::]:1900:1900/udp"
+      # Unifi STUN port
+      - "0.0.0.0:3478:3478/udp"
+      - "[::]:3478:3478/udp"
+      # Remote syslog port
+      - "0.0.0.0:5514:5514/udp"
+      - "[::]:5514:5514/udp"
+      # For mobile throughput test
+      - "0.0.0.0:6789:6789"
+      - "[::]:6789:6789"
+      # Required for device communication
+      - "0.0.0.0:8080:8080"
+      - "[::]:8080:8080"
+      # Unifi web admin, guest portal HTTPS redirect port
+      - "0.0.0.0:8443:8443"
+      - "[::]:8443:8443"
+      # Unifi guest portal HTTPS redirect port
+      - "0.0.0.0:8843:8843"
+      - "[::]:8843:8843"
+      # Unifi guest portal HTTP redirect port
+      - "0.0.0.0:8880:8880"
+      - "[::]:8880:8880"
+      # Required for AP discovery
+      - "0.0.0.0:10001:10001/udp"
+      - "[::]:10001:10001/udp"
     restart: unless-stopped
     logging:
       driver: "json-file"
