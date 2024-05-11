@@ -1,6 +1,7 @@
 services:
   telegraf:
     image: fabianbees/docker-telegraf-smartmontools:latest
+    restart: unless-stopped
     group_add:
       - "$DOCKER_GROUP"
     privileged: true
