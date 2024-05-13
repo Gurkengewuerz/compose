@@ -34,7 +34,7 @@ services:
 
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=${CONTAINER_DIR}/paperless"
+      - "backup.volumes=$CONTAINER_DIR/paperless/data,$CONTAINER_DIR/paperless/media"
 
   db:
     image: mariadb:10.9

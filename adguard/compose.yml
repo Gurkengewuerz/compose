@@ -24,7 +24,7 @@ services:
 
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=${CONTAINER_DIR}/adguard"
+      - "backup.volumes=${CONTAINER_DIR}/adguard/work,$CONTAINER_DIR/adguard/conf"
 
 networks:
   traefik:
