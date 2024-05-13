@@ -11,6 +11,10 @@ services:
       - DRSS_BOT_ACTIVITYTYPE=$BOT_ACTIVITYTYPE
       - DRSS_BOT_ACTIVITYNAME=$BOT_ACTIVITYNAME
       - DRSS_BOT_OWNERIDS=$BOT_OWNERIDS
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/drss"
     logging:
       driver: "json-file"
       options:

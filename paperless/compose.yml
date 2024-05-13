@@ -32,6 +32,10 @@ services:
       - "traefik.http.routers.paperless.service=paperless-srv"
       - "traefik.http.services.paperless-srv.loadbalancer.server.port=8000"
 
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/paperless"
+
   db:
     image: mariadb:10.9
     restart: unless-stopped
@@ -53,6 +57,41 @@ services:
     restart: unless-stopped
     volumes:
       - $CONTAINER_DIR/redis/data:/data
+
+  backup:
+    image: tiredofit/db-backup:4.0.19
+    restart: unless-stopped
+    depends_on: [db]
+    volumes:
+      - "${CONTAINER_DIR}/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      - DEFAULT_LOG_LEVEL=WARN
+
+      - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
+      - BACKUP_JOB_CONCURRENCY=1
+      - DEFAULT_CHECKSUM=NONE
+      - DEFAULT_COMPRESSION=NONE
+      - DEFAULT_BACKUP_INTERVAL=1440
+      - DEFAULT_BACKUP_BEGIN=0315
+      - DEFAULT_CLEANUP_TIME=10080
+
+      - DB01_TYPE=mariadb
+      - DB01_HOST=db
+      - DB01_NAME=paperless
+      - DB01_USER=paperless
+      - DB01_PASS=paperless
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
 
 networks:
   traefik:

@@ -1,0 +1,83 @@
+services:
+
+  db:
+    image: mariadb:10.9
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    volumes:
+      - "${CONTAINER_DIR}/db:/var/lib/mysql"
+    environment:
+      - "MARIADB_ROOT_PASSWORD=root"
+      - "MARIADB_USER=user"
+      - "MARIADB_DATABASE=db"
+      - "MARIADB_PASSWORD=user"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: unless-stopped
+    networks: [traefik, default]
+    environment:
+      - "PMA_ARBITRARY=1"
+      - "PMA_PORT=3306"
+      - "PMA_HOST=db"
+      - "PMA_USER=root"
+      - "PMA_PASSWORD=root"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.db.entrypoints=web"
+      - "traefik.http.routers.db.rule=Host(`${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.db.priority=100"
+      - "traefik.http.services.db.loadbalancer.server.port=80"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  backup:
+    image: tiredofit/db-backup:4.0.19
+    restart: unless-stopped
+    depends_on: [db]
+    volumes:
+      - "${CONTAINER_DIR}/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      - DEFAULT_LOG_LEVEL=WARN
+
+      - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
+      - BACKUP_JOB_CONCURRENCY=1
+      - DEFAULT_CHECKSUM=NONE
+      - DEFAULT_COMPRESSION=NONE
+      - DEFAULT_BACKUP_INTERVAL=1440
+      - DEFAULT_BACKUP_BEGIN=0315
+      - DEFAULT_CLEANUP_TIME=10080
+
+      - DB01_TYPE=mariadb
+      - DB01_HOST=db
+      - DB01_NAME=ALL
+      - DB01_USER=root
+      - DB01_PASS=root
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+
+networks:
+  traefik:
+    external: true

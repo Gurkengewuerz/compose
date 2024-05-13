@@ -22,6 +22,10 @@ services:
       - "traefik.http.routers.adguard.priority=100"
       - "traefik.http.services.adguard.loadbalancer.server.port=3000"
 
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/adguard"
+
 networks:
   traefik:
     external: true

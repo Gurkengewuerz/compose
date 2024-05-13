@@ -7,3 +7,7 @@ services:
     volumes:
       - "$CONTAINER_DIR/config:/config"
     restart: unless-stopped
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}"

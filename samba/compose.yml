@@ -11,6 +11,10 @@ services:
     environment:
       - "TZ=$TIMEZONE"
       - "SAMBA_LOG_LEVEL=0"
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/smb"
 
   wsdd:
     image: jonasped/wsdd
