@@ -84,6 +84,10 @@ def shell():
   print("**********************************")
   subprocess.run(["bash"], env=processEnv, start_new_session=True)
 
+def ls():
+  for list_dir in webdav_client.list():
+    print(list_dir.rstrip("/"))
+
 def send_notification(failed, msg):
   print("Sending Notification")
   # https://github.com/Gurkengewuerz/shoutrrr-api
@@ -231,8 +235,11 @@ def run():
 if __name__ == '__main__':
   if len(sys.argv) == 3 and sys.argv[1] == "shell":
     shell()
+  elif len(sys.argv) == 2 and sys.argv[1] == "ls":
+    ls()
   elif len(sys.argv) == 1:
     run()
   else:
     print("{} - start backup".format(sys.argv[0]))
     print("{} shell <repository> - start shell for repository".format(sys.argv[0]))
+    print("{} ls - list repositories in remote".format(sys.argv[0]))
