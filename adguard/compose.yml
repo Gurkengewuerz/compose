@@ -17,10 +17,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
-      - "traefik.http.routers.adguard.entrypoints=web"
-      - "traefik.http.routers.adguard.rule=Host(`${VIRTUAL_HOST}`)"
-      - "traefik.http.routers.adguard.priority=100"
-      - "traefik.http.services.adguard.loadbalancer.server.port=3000"
+      - "traefik.http.routers.adguard.entrypoints=websecure"
+      - "traefik.http.routers.adguard.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.adguard.service=adguard-srv"
+      - "traefik.http.services.adguard-srv.loadbalancer.server.port=3000"
 
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
