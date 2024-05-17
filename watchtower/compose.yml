@@ -1,10 +1,7 @@
-version: "3.8"
-
 services:
   watchtower:
     image: containrrr/watchtower
     restart: always
-    networks: [notify]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /etc/timezone:/etc/timezone:ro
@@ -16,7 +13,3 @@ services:
       - WATCHTOWER_NOTIFICATION_URL=$WATCHTOWER_NOTIFICATION_URL
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-
-networks:
-  notify:
-    external: true

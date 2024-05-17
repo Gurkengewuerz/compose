@@ -46,6 +46,10 @@ services:
       - "traefik.http.routers.webdav.service=webdav"
       - "traefik.http.services.webdav.loadbalancer.server.port=5007"
 
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
+
     logging:
       driver: "json-file"
       options:
