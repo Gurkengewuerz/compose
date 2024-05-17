@@ -26,6 +26,10 @@ services:
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/adguard/work,$CONTAINER_DIR/adguard/conf"
 
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
+
 networks:
   traefik:
     external: true

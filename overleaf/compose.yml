@@ -99,6 +99,10 @@ services:
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.overleaf.entrypoints=websecure"
       - "traefik.http.routers.overleaf.rule=Host(`$VIRTUAL_HOST`)"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
     logging:
       driver: "json-file"
       options:

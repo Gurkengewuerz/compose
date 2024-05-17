@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   ddns-updater:
     image: qmcgaw/ddns-updater
@@ -27,6 +25,10 @@ services:
       - "traefik.http.routers.ddns.rule=Host(`${VIRTUAL_HOST}`)"
       - "traefik.http.routers.ddns.priority=100"
       - "traefik.http.services.ddns.loadbalancer.server.port=8000"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
 
     logging:
       driver: "json-file"

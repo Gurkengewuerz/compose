@@ -11,3 +11,7 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"

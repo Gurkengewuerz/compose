@@ -24,6 +24,11 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/nextcloud"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
+
     environment:
       - REDIS_HOST=redis
       - REDIS_HOST_PASSWORD=$REDIS_HOST_PASSWORD

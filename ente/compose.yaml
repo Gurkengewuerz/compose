@@ -30,6 +30,9 @@ services:
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=$CONTAINER_DIR/data"
 
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
 
   # Resolve "localhost:3200" in the museum container to the minio container.
   socat:

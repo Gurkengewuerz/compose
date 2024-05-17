@@ -10,6 +10,8 @@ services:
       - MQTT_TOPIC=$MQTT_TOPIC
       - MQTT_USER=$MQTT_USER
       - MQTT_PASSWORD=$MQTT_PASSWORD
+    labels:
+      - "telegraf.enabled=true"
     logging:
       driver: "json-file"
       options:

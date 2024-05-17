@@ -22,9 +22,14 @@ services:
       - "traefik.http.routers.gitea.rule=HOST(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.gitea.service=gitea-srv"
       - "traefik.http.services.gitea-srv.loadbalancer.server.port=3000"
+
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/gitea"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
     logging:
       driver: "json-file"
       options:

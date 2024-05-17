@@ -25,6 +25,9 @@ services:
       - "$MUSIC_DIR:/mnt/music"
     devices:
       - /dev/dri:/dev/dri
+    labels:
+      - "diun.enable=true"
+      - "telegraf.enabled=true"
     logging:
       driver: "json-file"
       options:
