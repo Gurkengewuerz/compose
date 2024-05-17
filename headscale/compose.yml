@@ -2,9 +2,9 @@ version: "3.8"
 
 services:
   # API Key:
-  # docker-compose exec headscale headscale apikeys create --expiration 90d
+  # docker compose exec headscale headscale apikeys create --expiration 90d
   headscale:
-    image: headscale/headscale:latest
+    image: headscale/headscale:0.22
     command: headscale serve
     restart: unless-stopped
     networks: [traefik]
