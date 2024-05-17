@@ -1,0 +1,25 @@
+services:
+  diun:
+    image: ghcr.io/crazy-max/diun:latest
+    restart: unless-stopped
+    command: serve
+    volumes:
+      - "$CONTAINER_DIR/data:/data"
+      - "./diun.yml:/diun.yml:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - TZ=Europe/Berlin
+      - LOG_LEVEL=info
+      - LOG_JSON=false
+      - DIUN_WATCH_WORKERS=15
+      - DIUN_WATCH_SCHEDULE=0 */6 * * *
+      - DIUN_WATCH_JITTER=60s
+      - DIUN_WATCH_RUNONSTARTUP=true
+      - DIUN_WATCH_FIRSTCHECKNOTIF=false
+      - DIUN_DEFAULTS_WATCHREPO=false
+      - DIUN_DEFAULTS_SORTTAGS=lexicographical
+      - DIUN_NOTIF_DISCORD_WEBHOOKURL=$WEBHOOK_URL
+      - DIUN_PROVIDERS_DOCKER=true
+    labels:
+      - "diun.enable=true"
+

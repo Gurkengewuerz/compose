@@ -10,3 +10,4 @@ backups
 keycloak/themes
 keycloak/providers
 traefik/config/custom.yml
+diun/diun.yml
