@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   synapse:
-    image: matrixdotorg/synapse:v1.104.0
+    image: matrixdotorg/synapse:v1.107.0
     restart: unless-stopped
     networks: [traefik]
     volumes:
@@ -17,9 +15,15 @@ services:
       - "traefik.http.routers.synapse.rule=HOST(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.synapse.service=synapse-srv"
       - "traefik.http.services.synapse-srv.loadbalancer.server.port=8008"
+
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/synapse"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
+
     logging:
       driver: "json-file"
       options:

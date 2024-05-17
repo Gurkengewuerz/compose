@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   zipline:
@@ -31,9 +29,14 @@ services:
       - "traefik.http.routers.zipline.rule=Host(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.zipline.service=zipline-srv"
       - "traefik.http.services.zipline-srv.loadbalancer.server.port=3000"
+
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/zipline/uploads,${CONTAINER_DIR}_DIR}/zipline/public"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
 
   postgres:
     image: postgres:15
