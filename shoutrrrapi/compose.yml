@@ -3,7 +3,7 @@ services:
     container_name: shoutrrr-api
     image: ghcr.io/gurkengewuerz/shoutrrr-api:develop
     restart: unless-stopped
-    networks: [traefik, notify]
+    networks: [traefik]
     volumes:
       - "${CONTAINER_DIR}/config.yml:/app/config.yml:ro"
     labels:
@@ -22,6 +22,4 @@ services:
 
 networks:
   traefik:
-    external: true
-  notify:
     external: true
