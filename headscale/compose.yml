@@ -1,23 +1,21 @@
-version: "3.8"
-
 services:
-  # API Key:
-  # docker compose exec headscale headscale apikeys create --expiration 90d
   headscale:
-    image: headscale/headscale:0.22
-    command: headscale serve
+    container_name: "headscale"
+    image: ghcr.io/juanfont/headscale:0.23.0-alpha11
+    command: serve
     restart: unless-stopped
     networks: [traefik]
     ports:
       - "3478:3478/udp"
+    environment:
+      - TZ=$TZ
     volumes:
       - ${CONTAINER_DIR}/headscale/config:/etc/headscale
-      - ${CONTAINER_DIR}/headscale/data:/var/lib/headscale
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.headscale.entrypoints=websecure"
-      - "traefik.http.routers.headscale.rule=(Host(`$VIRTUAL_HOST`) || Host(`$VIRTUAL_HOST_ALT`))"
+      - "traefik.http.routers.headscale.rule=Host(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.headscale.service=headscale-srv"
       - "traefik.http.services.headscale-srv.loadbalancer.server.port=8080"
     logging:
@@ -26,31 +24,35 @@ services:
         max-size: "1m"
         max-file: "1"
 
-  headscale-webui:
-    image: ghcr.io/ifargle/headscale-webui:latest
+  headplane:
+    container_name: headplane
+    image: ghcr.io/tale/headplane:latest
     restart: unless-stopped
     networks: [traefik]
     volumes:
-      - ${CONTAINER_DIR}/headscale-web/:/data
-      - ${CONTAINER_DIR}/headscale/config/:/etc/headscale/:ro
+      - ${CONTAINER_DIR}/headscale/config:/var/lib/headscale
+      - ${CONTAINER_DIR}/headscale/config:/etc/headscale
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - TZ=$TZ
-      - COLOR=purple
-      - HS_SERVER=http://headscale:8080
-      - DOMAIN_NAME=https://$VIRTUAL_HOST
-      - SCRIPT_NAME=/web
-      - KEY=$UI_SECRET_KEY
-      - AUTH_TYPE=
-      - LOG_LEVEL=info
+      # This is always required for Headplane to work
+      - COOKIE_SECRET=$UI_SECRET_KEY
+      - HEADSCALE_CONTAINER=headscale
+      - DISABLE_API_KEY_LOGIN=true
+      - HOST=0.0.0.0
+      - PORT=3000
+
+      # This NEEDS to be set with OIDC, regardless of what's in the config
+      # This needs to be a very long-lived (999 day) API key used to create
+      # shorter ones for OIDC and allow the OIDC functionality to work
+      # docker compose exec headscale headscale apikeys create --expiration 999d
+      - API_KEY=$API_KEY_999
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.headscale-web.entrypoints=websecure"
-      - "traefik.http.routers.headscale-web.rule=(HOST(`$VIRTUAL_HOST`) || HOST(`$VIRTUAL_HOST_ALT`)) && PathPrefix(`/web`)"
+      - "traefik.http.routers.headscale-web.rule=HOST(`$VIRTUAL_HOST`) && PathPrefix(`/admin`)"
       - "traefik.http.routers.headscale-web.service=headscale-web-srv"
-      - "traefik.http.services.headscale-web-srv.loadbalancer.server.port=5000"
-      - "traefik.http.routers.headscale-web.middlewares=headscale-web-auth"
-      - "traefik.http.middlewares.headscale-web-auth.basicauth.users=$UI_USER:$UI_PASSWORD"
+      - "traefik.http.services.headscale-web-srv.loadbalancer.server.port=3000"
     logging:
       driver: "json-file"
       options:
