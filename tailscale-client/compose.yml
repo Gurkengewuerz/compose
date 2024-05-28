@@ -1,10 +1,9 @@
-version: "3.8"
-
 services:
   app:
     image: jauderho/tailscale:latest
     command: tailscaled
     restart: unless-stopped
+    networks: [traefik]
     cap_add:
       - NET_ADMIN
     sysctls:
@@ -22,3 +21,6 @@ services:
         max-size: "512k"
         max-file: "1"
 
+networks:
+  traefik:
+    external: true

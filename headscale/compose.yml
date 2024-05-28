@@ -18,6 +18,10 @@ services:
       - "traefik.http.routers.headscale.rule=Host(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.headscale.service=headscale-srv"
       - "traefik.http.services.headscale-srv.loadbalancer.server.port=8080"
+      
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
     logging:
       driver: "json-file"
       options:
@@ -45,7 +49,7 @@ services:
       # This needs to be a very long-lived (999 day) API key used to create
       # shorter ones for OIDC and allow the OIDC functionality to work
       # docker compose exec headscale headscale apikeys create --expiration 999d
-      - API_KEY=$API_KEY_999
+      - ROOT_API_KEY=$API_KEY_999
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
