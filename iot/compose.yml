@@ -24,7 +24,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.influx.entrypoints=websecure"
-      - "traefik.http.routers.influx.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.influx.rule=Host(`$VIRTUAL_HOST_INFLUX`)"
       - "traefik.http.routers.influx.service=influx-srv"
       - "traefik.http.services.influx-srv.loadbalancer.server.port=8086"
     logging:
@@ -33,42 +33,40 @@ services:
         max-size: "1m"
         max-file: "1"
 
-  mqtt:
-    image: gurken2108/mqtt-server:latest
+  emqx:
+    image: emqx/emqx:5.1.6
     restart: unless-stopped
     ports:
-      - "1882:1882"
       - "1883:1883"
+      - "8083:8083"
+      - "8084:8084"
+      - "8883:8883"
+    networks: [traefik, default]
     volumes:
-      - ${CONTAINER_DIR}/mqtt:/config/
-    environment:
-      PATH_AUTH_FILE: "/config/auth.json"
-      #PATH_PERSISTENCE_FILE: "/config/storage"
+      #- ${CONTAINER_DIR}/mqtt/etc:/opt/emqx/etc
+      - ${CONTAINER_DIR}/mqtt/data:/opt/emqx/data
+      - ${CONTAINER_DIR}/mqtt/log:/opt/emqx/log
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
+      interval: 5s
+      timeout: 25s
+      retries: 5
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.mqtt.entrypoints=web"
+      - "traefik.http.routers.mqtt.rule=Host(`$VIRTUAL_HOST_EMQX`)"
+      - "traefik.http.routers.mqtt.priority=100"
+      - "traefik.http.services.mqtt.loadbalancer.server.port=18083"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
     logging:
       driver: "json-file"
       options:
         max-size: "1m"
         max-file: "1"
-#  mosquitto:
-#    image: eclipse-mosquitto:latest
-#    restart: unless-stopped
-#    ports:
-#      - "9001:9001"
-#      - "1883:1883"
-#    volumes:
-#      - ${CONTAINER_DIR}/mosquitto/data:/mosquitto/data
-#      - ${CONTAINER_DIR}/mosquitto/config:/mosquitto/config
-#      - ${CONTAINER_DIR}/mosquitto/log:/mosquitto/log
-#    environment:
-#      - TZ=Europe/Berlin
-#      - PUID=1000
-#      - PGID=1000
-#    logging:
-#      # limit logs retained on host to 25MB
-#      driver: "json-file"
-#      options:
-#        max-size: "512k"
-#        max-file: "1"
 
 networks:
   traefik:
