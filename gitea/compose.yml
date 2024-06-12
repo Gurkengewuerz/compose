@@ -1,9 +1,7 @@
-version: "3.8"
-
 services:
   server:
-    image: gitea/gitea:1.21
-    restart: always
+    image: gitea/gitea:1.22
+    restart: unless-stopped
     networks: [default, traefik]
     depends_on: [db]
     ports:
@@ -37,7 +35,7 @@ services:
         max-file: "1"
 
   db:
-    image: mariadb:10.9
+    image: mariadb:10.8
     restart: unless-stopped
     environment:
       - MYSQL_ROOT_PASSWORD=gitea
