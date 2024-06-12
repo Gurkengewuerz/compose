@@ -34,13 +34,17 @@ services:
         max-file: "1"
 
   emqx:
-    image: emqx/emqx:5.1.6
+    image: emqx/emqx:5.7
     restart: unless-stopped
     ports:
+      # TCP
       - "1883:1883"
-      - "8083:8083"
-      - "8084:8084"
-      - "8883:8883"
+      # Websocket
+      #- "8083:8083"
+      # Secure Websocket
+      #- "8084:8084"
+      # SSL
+      #- "8883:8883"
     networks: [traefik, default]
     volumes:
       #- ${CONTAINER_DIR}/mqtt/etc:/opt/emqx/etc
@@ -58,6 +62,12 @@ services:
       - "traefik.http.routers.mqtt.rule=Host(`$VIRTUAL_HOST_EMQX`)"
       - "traefik.http.routers.mqtt.priority=100"
       - "traefik.http.services.mqtt.loadbalancer.server.port=18083"
+      - "traefik.http.routers.mqtt.service=mqtt"
+
+      - "traefik.http.routers.mqtt-ws.entrypoints=websecure"
+      - "traefik.http.routers.mqtt-ws.rule=Host(`$VIRTUAL_HOST_EMQX_WS`) && PathPrefix(`/mqtt`)"
+      - "traefik.http.services.mqtt-ws.loadbalancer.server.port=8083"
+      - "traefik.http.routers.mqtt-ws.service=mqtt-ws"
 
       - "diun.enable=true"
 
