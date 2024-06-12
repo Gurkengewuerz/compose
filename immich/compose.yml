@@ -2,8 +2,10 @@ services:
   immich-server:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:${RELEASE_VERSION}
-    command: ["start-server.sh"]
     restart: unless-stopped
+    extends:
+      file: hwaccel.transcoding.yml
+      service: $HWACCEL
     networks: [default, traefik]
     depends_on:
       - redis
@@ -28,28 +30,6 @@ services:
 
       - "telegraf.enabled=true"
 
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "512k"
-        max-file: "1"
-
-  immich-microservices:
-    container_name: immich_microservices
-    image: ghcr.io/immich-app/immich-server:${RELEASE_VERSION}
-    entrypoint: ["/bin/sh", "./start-microservices.sh"]
-    command: ["start-microservices.sh"]
-    restart: unless-stopped
-    extends:
-      file: hwaccel.transcoding.yml
-      service: $HWACCEL
-    volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
-    env_file:
-      - .env
-    depends_on:
-      - redis
-      - database
     logging:
       driver: "json-file"
       options:
