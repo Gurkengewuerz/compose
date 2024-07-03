@@ -3,7 +3,7 @@ services:
   jmusicbot:
     image: ghcr.io/yojoshb/jmusicbot-docker
     environment:
-      - BOT_VERSION=0.3.9
+      - BOT_VERSION=0.4.1
     volumes:
       - "$CONTAINER_DIR/config:/config"
     restart: unless-stopped
