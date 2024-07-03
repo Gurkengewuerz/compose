@@ -4,8 +4,6 @@ log:
 accessLog: {}
 
 entryPoints:
-  webalternate:
-    address: ":8080"
   web:
     address: ":80"
     http:
@@ -23,6 +21,10 @@ entryPoints:
         certResolver: letsencrypt
   dashboard:
     address: ":9999"
+  mqtt:
+    address: ":1883"
+  mqtt-tls:
+    address: ":8883"
 
 providers:
   docker:
@@ -38,6 +40,7 @@ certificatesResolvers:
       #email: it@example.com
       storage: /var/certificates/acme.json
       # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      keyType: RSA4096
       httpChallenge:
         entryPoint: web
 

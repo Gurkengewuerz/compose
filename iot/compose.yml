@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     ports:
       - "8086:8086"
-    networks: [traefik, default]
+    networks: [traefik]
     volumes:
       - ${CONTAINER_DIR}/influx/data:/var/lib/influxdb2
       - ${CONTAINER_DIR}/influx/config:/etc/influxdb2
@@ -33,41 +33,53 @@ services:
         max-size: "1m"
         max-file: "1"
 
-  emqx:
+  mqtt:
     image: emqx/emqx:5.7
     restart: unless-stopped
-    ports:
+    #ports:
       # TCP
-      - "1883:1883"
+      #- "1883:1883"
       # Websocket
       #- "8083:8083"
       # Secure Websocket
       #- "8084:8084"
       # SSL
       #- "8883:8883"
-    networks: [traefik, default]
+    networks: [traefik]
+    environment:
+      - EMQX_HOST=emqx-docker
     volumes:
       #- ${CONTAINER_DIR}/mqtt/etc:/opt/emqx/etc
       - ${CONTAINER_DIR}/mqtt/data:/opt/emqx/data
       - ${CONTAINER_DIR}/mqtt/log:/opt/emqx/log
-    healthcheck:
-      test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
-      interval: 5s
-      timeout: 25s
-      retries: 5
+      - ./emqx.conf:/opt/emqx/etc/emqx.conf:ro
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
-      - "traefik.http.routers.mqtt.entrypoints=web"
-      - "traefik.http.routers.mqtt.rule=Host(`$VIRTUAL_HOST_EMQX`)"
-      - "traefik.http.routers.mqtt.priority=100"
-      - "traefik.http.services.mqtt.loadbalancer.server.port=18083"
-      - "traefik.http.routers.mqtt.service=mqtt"
+      - "traefik.http.routers.mqtt-ui.entrypoints=web"
+      - "traefik.http.routers.mqtt-ui.rule=Host(`$VIRTUAL_HOST_EMQX`)"
+      - "traefik.http.routers.mqtt-ui.priority=100"
+      - "traefik.http.services.mqtt-ui.loadbalancer.server.port=18083"
+      - "traefik.http.routers.mqtt-ui.service=mqtt-ui"
 
       - "traefik.http.routers.mqtt-ws.entrypoints=websecure"
       - "traefik.http.routers.mqtt-ws.rule=Host(`$VIRTUAL_HOST_EMQX_WS`) && PathPrefix(`/mqtt`)"
       - "traefik.http.services.mqtt-ws.loadbalancer.server.port=8083"
       - "traefik.http.routers.mqtt-ws.service=mqtt-ws"
+
+      - "traefik.tcp.routers.mqtt-notls.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.mqtt-notls.entrypoints=mqtt"
+      - "traefik.tcp.routers.mqtt-notls.service=mqtt-notls"
+      - "traefik.tcp.routers.mqtt-notls.tls=false"
+      - "traefik.tcp.services.mqtt-notls.loadbalancer.server.port=1883"
+      - "traefik.tcp.services.mqtt-notls.loadbalancer.proxyprotocol.version=2"
+
+      - "traefik.tcp.routers.mqtt-tls.rule=HostSNI(`$VIRTUAL_HOST_EMQX_WS`)"
+      - "traefik.tcp.routers.mqtt-tls.entrypoints=mqtt-tls"
+      - "traefik.tcp.routers.mqtt-tls.service=mqtt-tls"
+      - "traefik.tcp.routers.mqtt-tls.tls=true"
+      - "traefik.tcp.services.mqtt-tls.loadbalancer.server.port=1883"
+      - "traefik.tcp.services.mqtt-tls.loadbalancer.proxyprotocol.version=2"
 
       - "diun.enable=true"
 

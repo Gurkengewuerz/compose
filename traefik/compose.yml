@@ -7,14 +7,24 @@ services:
     security_opt:
       - no-new-privileges:true
     ports:
+      # HTTP
       - "0.0.0.0:80:80"
-      - "0.0.0.0:443:443/tcp"
-      - "0.0.0.0:443:443/udp"
-      - "0.0.0.0:9999:9999"
       - "[::]:80:80"
+      # HTTPS 1.x-2.x
+      - "0.0.0.0:443:443/tcp"
       - "[::]:443:443/tcp"
+      # QUIC
+      - "0.0.0.0:443:443/udp"
       - "[::]:443:443/udp"
+      # traefik dashboard
+      - "0.0.0.0:9999:9999"
       - "[::]:9999:9999"
+      # MQTT TCP Router
+      - "0.0.0.0:1883:1883"
+      - "[::]:1883:1883"
+      # MQTT TLS TCP Router
+      - "0.0.0.0:8883:8883"
+      - "[::]:8883:8883"
     volumes:
       - "/etc/localtime:/etc/localtime:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"

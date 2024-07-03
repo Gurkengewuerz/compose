@@ -13,4 +13,5 @@ tls:
       curvePreferences:
         - CurveP521
         - CurveP384
+        - CurveP256 # needed for some iot devices
       sniStrict: true
