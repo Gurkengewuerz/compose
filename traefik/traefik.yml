@@ -13,12 +13,18 @@ entryPoints:
           to: websecure
           scheme: https
           permanent: false
+    transport:
+      respondingTimeouts:
+        readTimeout: "0s"
   websecure:
     address: ":443"
     http3: {}
     http:
       tls:
         certResolver: letsencrypt
+    transport:
+      respondingTimeouts:
+        readTimeout: "0s"
   dashboard:
     address: ":9999"
   mqtt:
