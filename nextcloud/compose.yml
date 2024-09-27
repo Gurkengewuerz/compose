@@ -6,6 +6,7 @@ services:
     depends_on: [redis, db]
     volumes:
       - ${CONTAINER_DIR}/nextcloud:/var/www/html
+      - ./opcache-recommed.ini:/usr/local/etc/php/conf.d/opcache-recommended.ini:ro
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -42,7 +43,7 @@ services:
         max-file: "1"
 
   db:
-    image: mariadb
+    image: mariadb:lts
     command: --transaction-isolation=READ-COMMITTED --log-bin=ROW --innodb_read_only_compressed=OF
     restart: unless-stopped
     volumes:
