@@ -1,8 +1,9 @@
 services:
   synapse:
-    image: matrixdotorg/synapse:v1.107.0
+    image: matrixdotorg/synapse:v1.115.0
     restart: unless-stopped
-    networks: [traefik]
+    depends_on: [db]
+    networks: [default, traefik]
     volumes:
       - "${CONTAINER_DIR}/synapse:/data"
     environment:
@@ -29,6 +30,57 @@ services:
       options:
         max-size: "512k"
         max-file: "1"
+
+  db:
+    image: docker.io/postgres:12-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=synapse
+      - POSTGRES_PASSWORD=synapse
+      # ensure the database gets created correctly
+      # https://element-hq.github.io/synapse/latest/postgres.html#set-up-database
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - "${CONTAINER_DIR}/db/schemas:/var/lib/postgresql/data"
+    healthcheck:
+      test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  backup:
+    image: tiredofit/db-backup:4.0.19
+    restart: unless-stopped
+    depends_on: [db]
+    volumes:
+      - "${CONTAINER_DIR}/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      - DEFAULT_LOG_LEVEL=WARN
+
+      - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
+      - BACKUP_JOB_CONCURRENCY=1
+      - DEFAULT_CHECKSUM=NONE
+      - DEFAULT_COMPRESSION=NONE
+      - DEFAULT_BACKUP_INTERVAL=1440
+      - DEFAULT_BACKUP_BEGIN=0315
+      - DEFAULT_CLEANUP_TIME=10080
+
+      - DB01_TYPE=postgres
+      - DB01_HOST=db
+      - DB01_NAME=synapse
+      - DB01_USER=synapse
+      - DB01_PASS=synapse
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
 
 networks:
   traefik:
