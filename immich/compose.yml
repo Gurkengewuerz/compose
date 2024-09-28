@@ -11,7 +11,7 @@ services:
       - redis
       - database
     volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      - "${CONTAINER_DIR}/immich/upload:/usr/src/app/upload"
     env_file:
       - .env
     labels:
@@ -24,7 +24,7 @@ services:
 
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=${UPLOAD_LOCATION}"
+      - "backup.volumes=${CONTAINER_DIR}/immich"
 
       - "diun.enable=true"
 
@@ -41,8 +41,8 @@ services:
     image: ghcr.io/immich-app/immich-machine-learning:${RELEASE_VERSION}
     restart: unless-stopped
     volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
-      - ${CONTAINER_DIR}/model-cache:/cache
+      - "${CONTAINER_DIR}/immich/upload:/usr/src/app/upload"
+      - "${CONTAINER_DIR}/model-cache:/cache"
     env_file:
       - .env
     logging:
@@ -66,7 +66,7 @@ services:
     image: tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
     restart: unless-stopped
     volumes:
-      - ${CONTAINER_DIR}/pgdata:/var/lib/postgresql/data
+      - "${CONTAINER_DIR}/pgdata:/var/lib/postgresql/data"
     env_file:
       - .env
     environment:
