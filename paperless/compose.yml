@@ -41,7 +41,7 @@ services:
       - "telegraf.enabled=true"
 
   db:
-    image: mariadb:10.9
+    image: mariadb:lts
     restart: unless-stopped
     volumes:
       - $CONTAINER_DIR/db:/var/lib/mysql
