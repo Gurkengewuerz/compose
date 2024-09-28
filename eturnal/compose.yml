@@ -1,0 +1,36 @@
+services:
+  eturnal:
+    image: ghcr.io/processone/eturnal:latest
+    restart: unless-stopped
+    user: 1000:1000
+
+    ### security options
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    ### Note: if eturnal binds to privileged ports (<1024) directly, the option "security_opt" below must be commented out.
+    security_opt:
+      - no-new-privileges:true
+
+    network_mode: "host"
+
+    ### Environment variables - information on https://eturnal.net/doc/#Environment_Variables
+    environment:
+      - ETURNAL_SECRET
+      - ETURNAL_RELAY_IPV4_ADDR
+      - ETURNAL_RELAY_IPV6_ADDR
+      - STUN_SERVICE=false
+      - ETURNAL_RELAY_MIN_PORT=49152
+      - ETURNAL_RELAY_MAX_PORT=65535
+
+    volumes:
+      - "./eturnal.yml:/etc/eturnal.yml:ro"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+

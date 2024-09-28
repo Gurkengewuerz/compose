@@ -31,6 +31,27 @@ services:
         max-size: "512k"
         max-file: "1"
 
+  synapse-admin:
+    image: awesometechnologies/synapse-admin:latest
+    restart: unless-stopped
+    depends_on: [db]
+    networks: [traefik]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.synapse-admin.rule=HOST(`$VIRTUAL_HOST`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.synapse-admin.middlewares=admin,admin_path"
+      - "traefik.http.middlewares.admin.redirectregex.regex=^(.*)/admin/?"
+      - "traefik.http.middlewares.admin.redirectregex.replacement=$${1}/admin/"
+      - "traefik.http.middlewares.admin_path.stripprefix.prefixes=/admin"
+      
+      - "com.centurylinklabs.watchtower.enable=true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
   db:
     image: docker.io/postgres:12-alpine
     restart: unless-stopped
