@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   outline:
-    image: outlinewiki/outline:0.73.1
+    image: outlinewiki/outline:0.80.2
     restart: unless-stopped
     networks: [default, traefik]
     depends_on: [db, redis]
