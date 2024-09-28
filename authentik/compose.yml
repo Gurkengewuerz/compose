@@ -1,0 +1,114 @@
+services:
+  server:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2024.8.2}
+    restart: unless-stopped
+    command: server
+    networks: [default, traefik]
+    environment:
+      AUTHENTIK_REDIS__DB: 1
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: db
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS:-authentik}
+    volumes:
+      - ${CONTAINER_DIR}/authentik/media:/media
+      - ${CONTAINER_DIR}/authentik/custom-templates:/templates
+      - ./enterprise.py:/authentik/enterprise/license.py:ro
+    env_file:
+      - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.authentik.entrypoints=websecure"
+      - "traefik.http.routers.authentik.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.authentik.service=authentik-srv"
+      - "traefik.http.services.authentik-srv.loadbalancer.server.port=9000"
+    depends_on:
+      - db
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  worker:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2024.8.2}
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_REDIS__DB: 1
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: db
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS:-authentik}
+    # `user: root` and the docker socket volume are optional.
+    # See more for the docker socket integration here:
+    # https://goauthentik.io/docs/outposts/integrations/docker
+    # Removing `user: root` also prevents the worker from fixing the permissions
+    # on the mounted folders, so when removing this make sure the folders have the correct UID/GID
+    # (1000:1000 by default)
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CONTAINER_DIR}/authentik/media:/media
+      - ${CONTAINER_DIR}/authentik/certs:/certs
+      - ${CONTAINER_DIR}/authentik/custom-templates:/templates
+      - ./enterprise.py:/authentik/enterprise/license.py:ro
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  db:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - ${CONTAINER_DIR}/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASS:-authentik}
+      POSTGRES_USER: ${PG_USER:-authentik}
+      POSTGRES_DB: ${PG_DB:-authentik}
+    env_file:
+      - .env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  redis:
+    image: docker.io/library/redis:alpine
+    command: --save 60 1 --loglevel warning
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    volumes:
+      - ${CONTAINER_DIR}/redis:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+networks:
+  traefik:
+    external: true
