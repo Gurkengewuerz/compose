@@ -190,8 +190,8 @@ def run():
       print("Success: autoinitialize repository")
     else:
       print("Failure: autoinitialize failed")
-      counter["failed"] += 1
-      continue
+      #counter["failed"] += 1
+      #continue
     
     excludeList = []
     if LABEL_NAMES["exclude"] in labels:
