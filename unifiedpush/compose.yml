@@ -1,0 +1,33 @@
+services:
+
+  proxy:
+    image: unifiedpush/common-proxies
+    restart: unless-stopped
+    networks: [traefik]
+    volumes:
+      - "${CONTAINER_DIR}:/data"
+    environment:
+      - UP_REWRITE_FCM_ENABLE=true
+      - UP_REWRITE_FCM_CREDENTIALS_PATH=/data/serviceAccountKey.json
+      - UP_GATEWAY_MATRIX_ENABLE=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.ntfy.entrypoints=websecure"
+      - "traefik.http.routers.ntfy.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.ntfy.service=ntfy-srv"
+      - "traefik.http.services.ntfy-srv.loadbalancer.server.port=5000"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+
+networks:
+  traefik:
+    external: true
