@@ -1,0 +1,743 @@
+@font-face {
+  font-family: 'System';
+  src: url('/media/custom/flow/fonts/system-ms/SystemBold.woff2') format('woff2'),
+      url('/media/custom/flow/fonts/system-ms/SystemBold.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MS Serif';
+  src: url('/media/custom/flow/fonts/ms-serif/MSSerif.woff2') format('woff2'),
+      url('/media/custom/flow/fonts/ms-serif/MSSerif.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MS Sans Serif';
+  src: url('/media/custom/flow/fonts/ms-sans-serif/MS Sans Serif.woff2') format('woff2'),
+      url('/media/custom/flow/fonts/ms-sans-serif/MS Sans Serif.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+::-moz-selection {
+  background: blue;
+  color: white;
+}
+
+::selection {
+  background: blue;
+  color: white;
+}
+
+:root {
+  --ak-flow-background: url("/media/custom/flow/img/ms.jpeg") !important;
+  --border-field: inset -1px -1px var(--button-highlight), inset 1px 1px var(--button-shadow), inset -2px -2px var(--button-face), inset 2px 2px var(--window-frame);
+  --border-raised-inner: inset -2px -2px var(--button-shadow), inset 2px 2px var(--button-face);
+  --border-raised-outer: inset -1px -1px var(--window-frame), inset 1px 1px var(--button-highlight);
+  --border-sunken-inner: inset -2px -2px var(--button-face), inset 2px 2px var(--button-shadow);
+  --border-sunken-outer: inset -1px -1px var(--button-highlight), inset 1px 1px var(--window-frame);
+  --border-width: 1px;
+  --border-window-inner: inset -2px -2px var(--button-shadow), inset 2px 2px var(--button-highlight);
+  --border-window-outer: inset -1px -1px var(--window-frame), inset 1px 1px var(--button-face);
+  --button-face: #dfdfdf;
+  --button-highlight: #ffffff;
+  --button-shadow: #808080;
+  --checkbox-left: calc(-1 * var(--checkbox-total-width-precalc));
+  --checkbox-total-width-precalc: var(--checkbox-width) +
+    var(--radio-label-spacing);
+  --checkbox-total-width: calc(var(--checkbox-total-width-precalc));
+  --checkbox-width: 13px;
+  --checkmark-left: 3px;
+  --checkmark-top: 3px;
+  --checkmark-width: 7px;
+  --dialog-blue-light: #1084d0;
+  --dialog-blue: #000080;
+  --dialog-gray-light: #b5b5b5;
+  --dialog-gray: #808080;
+  --element-spacing: 8px;
+  --grouped-button-spacing: 4px;
+  --grouped-element-spacing: 6px;
+  --link-blue: #0000ff;
+  --radio-dot-left: calc(
+    -1 * (var(--radio-total-width-precalc)) + var(--radio-width) / 2 - var(
+        --radio-dot-width
+      ) / 2
+  );
+  --radio-dot-top: calc(var(--radio-width) / 2 - var(--radio-dot-width) / 2);
+  --radio-dot-width: 4px;
+  --radio-label-spacing: 6px;
+  --radio-left: calc(-1 * var(--radio-total-width-precalc));
+  --radio-total-width-precalc: var(--radio-width) + var(--radio-label-spacing);
+  --radio-total-width: calc(var(--radio-total-width-precalc));
+  --radio-width: 12px;
+  --range-spacing: 10px;
+  --range-track-height: 4px;
+  --surface: #c0c0c0;
+  --window-frame: #0a0a0a;
+}
+
+* .fa-exclamation-circle:before {
+  background-image: url("/media/custom/flow/img/error.png");
+  background-repeat: no-repeat;
+  background-size: 100%;
+  color: transparent;
+  content: "abc";
+  display: block;
+  width: 18px;
+}
+
+* .fa-times:before {
+  background-image: url("/media/custom/flow/icons/close.svg");
+  background-repeat: no-repeat;
+  background-size: 100%;
+  color: transparent;
+  content: "abc";
+  display: block;
+  width: 18px;
+}
+
+a {
+  color: blue;
+  cursor: url("/media/custom/flow/cursors/hand.cur"), auto;
+  text-decoration: underline;
+}
+
+a:hover {
+  font-weight: bold;
+}
+
+a[href^="https://goauthentik.io"]
+{
+  left: 0px;
+  position: fixed;
+  top: 0px;
+  visibility: hidden;
+}
+
+a[href^="https://goauthentik.io"]::before
+{
+  content: "Powered by Authentik";
+  font-family: "MS Serif";
+  font-size: 36px;
+  left: 20px;
+  position: fixed;
+  top: 20px;
+  visibility: visible;
+}
+
+ak-form-element[label="Please read and agree to our code of conduct before you continue."] {
+  font-size: 16px;
+  font-weight: 100;
+  padding-bottom: 10px;
+}
+
+ak-loading-overlay {
+  background-color: transparent;
+  background-image: linear-gradient(45deg, #000 25%, transparent 25%),
+    linear-gradient(135deg, #000 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #000 75%),
+    linear-gradient(135deg, transparent 75%, #000 75%);
+  background-position: 0 0, 1px 0, 1px -1px, 0px 1px;
+  background-size: 2px 2px;
+  cursor: url("/media/custom/flow/cursors/hourglass.cur"), auto;
+}
+
+ak-stage-access-denied-icon::before {
+  background-color: rgb(143, 149, 153);
+  box-shadow: white 1px 1px, white 1px 0px;
+  content: " ";
+  display: block;
+  height: 1px;
+  margin-bottom: 20px;
+}
+
+body {
+  cursor: url("/media/custom/flow/cursors/arrow.cur"), auto;
+}
+
+body::after {
+  content: url("/media/custom/flow/img/error.png")
+    url("/media/custom/flow/img/hourglass.gif")
+    url("/media/custom/flow/img/drumroll.gif")
+    url("/media/custom/flow/icons/close.svg")
+    url("/media/custom/flow/fonts/ms-sans-serif/MS Sans Serif.woff2")
+    url("/media/custom/flow/fonts/ms-sans-serif/MS Sans Serif.woff")
+    url("/media/custom/flow/fonts/ms-serif/MSSerif.woff")
+    url("/media/custom/flow/fonts/ms-serif/MSSerif.woff2")
+    url("/media/custom/flow/fonts/system-ms/SystemBold.woff2");
+  height: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 0;
+  z-index: -1;
+}
+
+button,
+.pf-c-button {
+  background-color: #c8ced1 !important;
+  border-color: black;
+  border: 2px solid !important;
+  box-shadow: inset -3px -3px grey, inset 3px 3px white;
+  color: black !important;
+  cursor: url("/media/custom/flow/cursors/hand.cur"), auto;
+  font-family: "System";
+  text-decoration: none;
+}
+
+button.pf-m-link {
+  background-color: #6f85d3 !important;
+  border-color: black !important;
+  color: white !important;
+}
+
+button:active,
+.pf-c-button:active {
+  box-shadow: inset 3px 3px grey;
+}
+
+button:hover,
+.pf-c-button:hover {
+  filter: brightness(107%);
+}
+
+div:has(#adultcheckbox:not(:checked)) button {
+  border-bottom: 2px solid black !important;
+  border-right: 2px solid black !important;
+  color: gray !important;
+  pointer-events: none;
+}
+
+h1,
+h3 {
+  color: black !important;
+  user-select: none;
+}
+
+h3 {
+  font-family: "MS Sans Serif" !important;
+}
+
+input[type="email"],
+input[type="number"],
+input[type="password"],
+input[type="text"] {
+  height: 30px;
+  line-height: 2;
+}
+
+input[type="email"],
+input[type="number"],
+input[type="password"],
+input[type="text"],
+select,
+textarea {
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--button-highlight);
+  border-radius: 0;
+  border: none;
+  box-shadow: var(--border-field);
+  box-sizing: border-box;
+  padding: 3px 4px;
+}
+
+input[type="email"]:disabled,
+input[type="email"]:read-only,
+input[type="number"]:disabled,
+input[type="number"]:read-only,
+input[type="password"]:disabled,
+input[type="password"]:read-only,
+input[type="text"]:disabled,
+input[type="text"]:read-only,
+textarea:disabled {
+  background-color: var(--surface);
+}
+
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus,
+input[type="text"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+
+input[type="email"]:focus::placeholder,
+input[type="number"]:focus::placeholder,
+input[type="password"]:focus::placeholder,
+input[type="text"]:focus::placeholder {
+  color: white;
+}
+
+input[type="number"] {
+  height: 22px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  background: transparent;
+  width: 100%;
+}
+
+input[type="range"].has-box-indicator::-moz-range-thumb {
+  background: svg-load(
+    "/media/custom/flow/icons/indicator-rectangle-horizontal.svg"
+  );
+  transform: translateY(0px);
+}
+
+input[type="range"].has-box-indicator::-webkit-slider-thumb {
+  background: svg-load(
+    "/media/custom/flow/icons/indicator-rectangle-horizontal.svg"
+  );
+  transform: translateY(-10px);
+}
+
+input[type="range"]::-moz-range-thumb {
+  background: svg-load("/media/custom/flow/icons/indicator-horizontal.svg");
+  border-radius: 0;
+  border: 0;
+  height: 21px;
+  transform: translateY(2px);
+  width: 11px;
+}
+
+input[type="range"]::-moz-range-track {
+  background: black;
+  border-bottom: 1px solid grey;
+  border-right: 1px solid grey;
+  box-shadow: 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 0 0 darkgrey,
+    -1px -1px 0 darkgrey, 0 -1px 0 darkgrey, -1px 1px 0 white, 1px -1px darkgrey;
+  box-sizing: border-box;
+  height: 2px;
+  width: 100%;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: black;
+  border-bottom: 1px solid grey;
+  border-right: 1px solid grey;
+  box-shadow: 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 0 0 darkgrey,
+    -1px -1px 0 darkgrey, 0 -1px 0 darkgrey, -1px 1px 0 white, 1px -1px darkgrey;
+  box-sizing: border-box;
+  height: 2px;
+  width: 100%;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: svg-load("/media/custom/flow/icons/indicator-horizontal.svg");
+  height: 21px;
+  transform: translateY(-8px);
+  width: 11px;
+}
+
+input[type="range"]:focus {
+  outline: none;
+}
+
+label {
+  color: black !important;
+  cursor: default !important;
+  user-select: none;
+}
+
+label.pf-c-check__label {
+  cursor: url("/media/custom/flow/cursors/arrow.cur"), auto !important;
+}
+
+p:has(.marginkill) {
+  margin-bottom: -20px;
+  margin-top: -10px;
+  user-select: none;
+}
+
+select {
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: svg-load("/media/custom/flow/icons/button-down.svg");
+  background-position: top 2px right 2px;
+  background-repeat: no-repeat;
+  border-radius: 0;
+  padding-right: 32px;
+  position: relative;
+}
+
+textarea::-webkit-resizer {
+  background-color: #c3c7cb;
+  background-image: url("data:image/png; background-position:bottom right; background-repeat:no-repeat; base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAN0lEQVR4Ae3MgQUAMBRDwU5fFF05lb/CARTBw2Ulof0DxPtcwp3hNuEYnjbcEW4TjuFpwx3h9gMWGgZ2Y/PT2gAAAABJRU5ErkJggg==");
+  height: 16px;
+  image-rendering: pixelated;
+  width: 16px;
+}
+
+textarea::-webkit-scrollbar {
+  height: 16px;
+  width: 16px;
+}
+
+textarea::-webkit-scrollbar-button,
+textarea::-webkit-scrollbar-button {
+  background-color: #c3c7cb;
+  background-position: center center;
+  background-repeat: no-repeat;
+  border-bottom: 1px solid black;
+  border-left: 1px solid #c3c7cb;
+  border-right: 1px solid black;
+  border-top: 1px solid #c3c7cb;
+  box-shadow: inset 1px 1px 0 0 white, inset -1px -1px 0 0 #868a8e;
+  display: block;
+  height: 16px;
+  image-rendering: pixelated;
+  width: 16px;
+}
+
+textarea::-webkit-scrollbar-button:active,
+textarea::-webkit-scrollbar-button:active {
+  background-position: 2px 2px;
+  border-bottom: 1px solid #868a8e;
+  border-left: 1px solid #868a8e;
+  border-right: 1px solid #868a8e;
+  border-top: 1px solid #868a8e;
+  box-shadow: none;
+}
+
+textarea::-webkit-scrollbar-button:horizontal:decrement,
+textarea::-webkit-scrollbar-button:horizontal:decrement {
+  background-image: url("data:image/png; base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAQAAAD8fJRsAAAAHklEQVQY02NgoBT8xyX8H5fwf1zCpOjAYwceV1EEAAO2D/HsQ4vsAAAAAElFTkSuQmCC");
+}
+
+textarea::-webkit-scrollbar-button:horizontal:decrement:end,
+textarea::-webkit-scrollbar-button:horizontal:decrement:end {
+  display: none;
+}
+
+textarea::-webkit-scrollbar-button:horizontal:increment,
+textarea::-webkit-scrollbar-button:horizontal:increment {
+  background-image: url("data:image/png; base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAQAAAD8fJRsAAAAHUlEQVQY02NgIB/8xy3xH7fEf9wS/0nUQZqrKAYAK44P8ZRmzLQAAAAASUVORK5CYII=");
+}
+
+textarea::-webkit-scrollbar-button:horizontal:increment:start,
+textarea::-webkit-scrollbar-button:horizontal:increment:start {
+  display: none;
+}
+
+textarea::-webkit-scrollbar-button:vertical:decrement,
+textarea::-webkit-scrollbar-button:vertical:decrement {
+  background-image: url("data:image/png; base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAGklEQVR4AWMYxuA/SYphmETFhDX9x4mHGQAAcL4P8dQiMq8AAAAASUVORK5CYII=");
+}
+
+textarea::-webkit-scrollbar-button:vertical:decrement:end,
+textarea::-webkit-scrollbar-button:vertical:decrement:end {
+  display: none;
+}
+
+textarea::-webkit-scrollbar-button:vertical:increment,
+textarea::-webkit-scrollbar-button:vertical:increment {
+  background-image: url("data:image/png; base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAQAAAD8fJRsAAAAF0lEQVQY02NgoBf4jwJxSOHQhcNAOgMAWWAP8Rv2U3UAAAAASUVORK5CYII=");
+}
+
+textarea::-webkit-scrollbar-button:vertical:increment:start,
+textarea::-webkit-scrollbar-button:vertical:increment:start {
+  display: none;
+}
+
+textarea::-webkit-scrollbar-corner {
+  background-color: #c3c7cb;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background-color: #c3c7cb;
+  border-bottom: 1px solid black;
+  border-left: 1px solid #c3c7cb;
+  border-right: 1px solid black;
+  border-top: 1px solid #c3c7cb;
+  box-shadow: inset 1px 1px 0 0 white, inset -1px -1px 0 0 #868a8e;
+  height: 16px;
+  width: 16px;
+  z-index: 1;
+}
+
+textarea::-webkit-scrollbar-track {
+  background-image: url("data:image/png; base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFElEQVQIW2M4fPz0////GYAYyAIASnoKpV3w4kgAAAAASUVORK5CYII=");
+  image-rendering: pixelated;
+}
+
+textarea::-webkit-scrollbar-track:active {
+  background-image: url("data:image/png; base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVQIW2No6+pjgAAgCwAWogM9VKrgGQAAAABJRU5ErkJggg==");
+}
+
+textarea[name="eula"] {
+  background-color: white !important;
+  color: black;
+  cursor: url("/media/custom/flow/cursors/arrow.cur"), auto !important;
+  font-family: "System", sans-serif;
+  height: 600px;
+  line-height: 1em;
+  margin-bottom: -10px;
+  overflow: auto;
+  resize: none;
+  user-select: none;
+}
+
+textarea[name="eula"]::selection {
+  background: white;
+  color: black;
+}
+
+.ak-brand {
+  margin-top: -20px !important;
+}
+
+.avatar {
+  background-color: unset;
+  box-shadow: rgb(129, 129, 129) -2px -2px, rgb(129, 129, 129) -2px 0px,
+    rgb(129, 129, 128) 0px -2px, rgb(224, 222, 222) 2px 2px,
+    rgb(224, 222, 222) 0px 2px, rgb(224, 222, 222) 2px 0px,
+    rgb(129, 129, 129) 2px -2px, rgb(224, 222, 221) -2px 2px;
+  padding-right: 10px;
+  user-select: none;
+  color: black !important;
+}
+
+.pf-c-alert__title {
+  font-family: "System";
+}
+
+.pf-c-avatar {
+  border-radius: 0px;
+  border: 0px;
+  box-shadow: rgb(129, 129, 129) -2px -2px, rgb(129, 129, 129) -2px 0px,
+    rgb(129, 129, 128) 0px -2px, rgb(224, 222, 222) 2px 2px,
+    rgb(224, 222, 222) 0px 2px, rgb(224, 222, 222) 2px 0px,
+    rgb(129, 129, 129) 2px -2px, rgb(224, 222, 221) -2px 2px;
+  height: 50px;
+  margin-right: 12px !important;
+  width: 50px;
+}
+
+.pf-c-background-image {
+  background-color: #161657;
+}
+
+.pf-c-background-image::before {
+  --ak-flow-background: url(/media/custom/flow/img/ms.jpeg) !important;
+}
+
+.pf-c-brand {
+  height: auto;
+}
+
+.pf-c-button::after {
+  border: 0px;
+}
+
+.pf-c-button__icon {
+  filter: invert(1);
+  height: 0px;
+}
+
+.pf-c-button__icon img {
+  height: 26px;
+  margin-top: 1px;
+}
+
+.pf-c-check input[type="checkbox"] {
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background: 0;
+  border: none;
+  margin: 0;
+  opacity: 0;
+  position: fixed;
+}
+
+.pf-c-check input[type="checkbox"] + label {
+  cursor: url("/media/custom/flow/cursors/hand.cur"), auto !important;
+  line-height: 13px;
+  margin-left: var(--checkbox-total-width);
+  position: relative;
+}
+
+.pf-c-check input[type="checkbox"] + label::before {
+  background: var(--button-highlight);
+  box-shadow: var(--border-field);
+  content: "";
+  cursor: url("/media/custom/flow/cursors/hand.cur"), auto !important;
+  display: inline-block;
+  height: var(--checkbox-width);
+  left: calc(-1 * (var(--checkbox-total-width-precalc)));
+  margin-right: var(--radio-label-spacing);
+  position: absolute;
+  width: var(--checkbox-width);
+}
+
+.pf-c-check input[type="checkbox"]:active + label::before {
+  background: var(--surface);
+}
+
+.pf-c-check input[type="checkbox"]:checked + label::before {
+  background-image: url("/media/custom/flow/icons/checkmark.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 60%;
+}
+
+.pf-c-check input[type="checkbox"]:focus + label {
+  outline: 1px dotted #000000;
+}
+
+.pf-c-check input[type="checkbox"][disabled] + label::before {
+  background: var(--surface);
+}
+
+.pf-c-check input[type="checkbox"][disabled]:checked + label::after {
+  background: svg-load("/media/custom/flow/icons/checkmark-disabled.svg");
+}
+
+.pf-c-empty-state {
+  cursor: url("/media/custom/flow/cursors/hourglass.cur"), auto;
+  padding: 0px;
+}
+
+.pf-c-empty-state__content {
+  margin-top: 55px;
+}
+
+.pf-c-empty-state__content h1 {
+  font-family: "MS Sans Serif" !important;
+}
+
+.pf-c-empty-state__content h1::after {
+  content: "...";
+}
+
+.pf-c-empty-state__icon {
+  background-image: url("/media/custom/flow/img/drumroll.gif");
+  background-repeat: no-repeat;
+  background-size: 90%;
+}
+
+.pf-c-empty-state__icon *,
+.pf-c-spinner * {
+  visibility: hidden;
+}
+
+.pf-c-form,
+.pf-c-form-control {
+  color: black !important;
+  font-family: "MS Sans Serif" !important;
+}
+
+.pf-c-form__label-text {
+  color: black !important;
+  cursor: url("/media/custom/flow/cursors/arrow.cur"), auto !important;
+}
+
+.pf-c-login__footer ul li:last-child {
+  display: none;
+}
+
+.pf-c-login__main {
+  background-color: #c8ced1;
+  box-shadow: 2px 2px #818181, 2px 0 #818181, 0 2px #818180, -2px -2px #e0dede,
+    0 -2px #e0dede, -2px 0 #e0dede, -2px 2px #818181, 2px -2px #e0dedd;
+}
+
+.pf-c-login__main-body {
+  margin: auto;
+}
+
+.pf-c-login__main-body .pf-c-form__group {
+  color: black !important;
+  font-family: "MS Sans Serif" !important;
+}
+
+.pf-c-login__main-footer-band {
+  background-color: #c8ced1;
+  color: black !important;
+  font-family: "MS Sans Serif" !important;
+  margin-top: 0px;
+  padding-bottom: 15px;
+  text-align: left;
+  user-select: none;
+}
+
+.pf-c-login__main-footer-band-item {
+  padding: 0px;
+}
+
+.pf-c-login__main-footer-band::before {
+  background-color: #8f9599;
+  box-shadow: 1px 1px white, 1px 0px white;
+  content: " ";
+  display: block;
+  height: 1px;
+  margin-bottom: 20px;
+}
+
+.pf-c-login__main-footer-links {
+  padding-bottom: 0px;
+}
+
+.pf-c-login__main-header h1 {
+  color: black !important;
+  font-family: "MS Serif" !important;
+  font-weight: bold !important;
+  margin: auto !important;
+}
+
+.pf-c-login__main::before {
+  background-color: #191eb6;
+  box-shadow: -2px -2px #818181, -2px 0 #818181, 0 -2px #818180, 2px 2px #e0dede,
+    0 2px #e0dede, 2px 0 #e0dede, 2px -2px #818181, -2px 2px #e0dedd;
+  color: white;
+  content: "Single-Sign-On";
+  display: block;
+  font-family: "System", "sans-serif";
+  font-weight: bold !important;
+  margin-left: 7px;
+  margin-top: 5px;
+  position: absolute;
+  text-align: center;
+  width: calc(100% - 14px);
+}
+
+.pf-c-spinner {
+  animation: none !important;
+  background-image: url("/media/custom/flow/img/hourglass.gif");
+  background-repeat: no-repeat;
+  background-size: 90%;
+}
+
+.pf-icon-error-circle-o::before {
+  background-image: url("/media/custom/flow/img/error.png");
+  background-repeat: no-repeat;
+  background-size: 100%;
+  color: transparent;
+}
+
+.pf-m-action {
+  margin: 0 !important;
+}
+
+.reason {
+  margin-top: -20px;
+}
+
+a[href^="https://goauthentik.io"]
+{
+  display: none;
+}
+
+a[href^="https://goauthentik.io"]::before
+{
+  display: none;
+}
