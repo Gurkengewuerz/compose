@@ -24,7 +24,7 @@ services:
 
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
-      - "backup.volumes=${CONTAINER_DIR}/immich"
+      - "backup.volumes=${CONTAINER_DIR}/immich/upload"
 
       - "diun.enable=true"
 
