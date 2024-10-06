@@ -33,6 +33,11 @@ services:
       - "diun.enable=true"
 
       - "telegraf.enabled=true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   # Resolve "localhost:3200" in the museum container to the minio container.
   socat:
@@ -41,9 +46,14 @@ services:
     restart: unless-stopped
     network_mode: service:museum
     depends_on: [museum]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   postgres:
-    image: postgres:12
+    image: postgres:15
     restart: unless-stopped
     volumes:
       - "$CONTAINER_DIR/postgres:/var/lib/postgresql/data"
@@ -59,6 +69,11 @@ services:
       retries: 20
     networks:
       - internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   minio:
     image: minio/minio
@@ -75,6 +90,11 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=$CONTAINER_DIR/minio"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   minio-provision:
     image: minio/mc
@@ -85,6 +105,11 @@ services:
     networks:
       - internal
     entrypoint: sh /provision.sh
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
   backup:
     image: tiredofit/db-backup:4.0.19
@@ -115,6 +140,11 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=$CONTAINER_DIR/db-backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
 
 networks:
   traefik:
