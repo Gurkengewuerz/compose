@@ -90,6 +90,7 @@ services:
     image: tiredofit/db-backup:4.0.19
     restart: unless-stopped
     depends_on: [postgres]
+    networks: [internal]
     volumes:
       - "$CONTAINER_DIR/db-backup:/backup"
     environment:
