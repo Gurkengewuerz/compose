@@ -28,6 +28,10 @@ services:
       - "traefik.http.routers.authentik.rule=HOST(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.authentik.service=authentik-srv"
       - "traefik.http.services.authentik-srv.loadbalancer.server.port=9000"
+
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/authentik/media"
     depends_on:
       - db
       - redis
@@ -112,6 +116,35 @@ services:
       options:
         max-size: "512k"
         max-file: "1"
+
+  backup:
+    image: tiredofit/db-backup:4.0.19
+    restart: unless-stopped
+    depends_on: [db]
+    volumes:
+      - "${CONTAINER_DIR}/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      - DEFAULT_LOG_LEVEL=WARN
+
+      - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
+      - BACKUP_JOB_CONCURRENCY=1
+      - DEFAULT_CHECKSUM=NONE
+      - DEFAULT_COMPRESSION=NONE
+      - DEFAULT_BACKUP_INTERVAL=1440
+      - DEFAULT_BACKUP_BEGIN=0315
+      - DEFAULT_CLEANUP_TIME=10080
+
+      - DB01_TYPE=postgres
+      - DB01_HOST=db
+      - DB01_NAME=${PG_DB:-authentik}
+      - DB01_USER=${PG_USER:-authentik}
+      - DB01_PASS=${PG_PASS:-authentik}
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
 
 networks:
   traefik:
