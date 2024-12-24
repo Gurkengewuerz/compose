@@ -1,0 +1,121 @@
+services:
+
+  backup:
+    image: tiredofit/db-backup:4.0.19
+    restart: unless-stopped
+    volumes:
+      - "${DATA_DIR}/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      - DEFAULT_LOG_LEVEL=WARN
+
+      - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
+      - BACKUP_JOB_CONCURRENCY=1
+      - DEFAULT_CHECKSUM=NONE
+      - DEFAULT_COMPRESSION=NONE
+      - DEFAULT_BACKUP_INTERVAL=1440
+      - DEFAULT_BACKUP_BEGIN=0315
+      - DEFAULT_CLEANUP_TIME=10080
+
+      - DB01_TYPE=mariadb
+      - DB01_HOST=db
+      - DB01_NAME=addy
+      - DB01_USER=root
+      - DB01_PASS=addy-root
+    depends_on: [db]
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${DATA_DIR}/db-backup,${DATA_DIR}/overrides"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  db:
+    image: mariadb:10
+    restart: unless-stopped
+    command:
+      - "mysqld"
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+    volumes:
+      - "${DATA_DIR}/db:/var/lib/mysql"
+    environment:
+      - MYSQL_DATABASE=addy
+      - MYSQL_USER=addy
+      - MYSQL_PASSWORD=addy
+      - MARIADB_ROOT_PASSWORD=addy-root
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  redis:
+    image: redis:4.0-alpine
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  addy:
+    image: anonaddy/anonaddy:latest
+    container_name: anonaddy
+    restart: unless-stopped
+    networks: [traefik, default]
+    volumes:
+      - "${DATA_DIR}/addy:/data"
+    ports:
+      - "${FLOATING_IP}:25:25"
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=addy
+      - DB_USERNAME=addy
+      - DB_PASSWORD=addy
+      - REDIS_HOST=redis
+      - TZ=Europe/Berlin
+      - APP_NAME=AnonAddy
+      - APP_KEY=base64:${APP_KEY}
+      - APP_URL=https://${VIRTUAL_HOST}
+      - ANONADDY_ENABLE_REGISTRATION=true
+      - ANONADDY_DOMAIN=${VIRTUAL_HOST}
+      - ANONADDY_HOSTNAME=${HOSTNAME}
+      - ANONADDY_SECRET=${APP_SECRET}
+      - ANONADDY_LIMIT=1000
+      - ANONADDY_BANDWIDTH_LIMIT=104857600000
+      - ANONADDY_NEW_ALIAS_LIMIT=1000
+      - ANONADDY_ADDITIONAL_USERNAME_LIMIT=0
+      - MAIL_FROM_NAME=AnonAddy
+      - MAIL_FROM_ADDRESS=${SMTP_RELAY_USERNAME}
+      - POSTFIX_SMTP_TLS=${SMTP_RELAY_ENABLE_TLS}
+      - POSTFIX_RELAYHOST=${SMTP_RELAY_HOST}:${SMTP_RELAY_PORT}
+      - POSTFIX_RELAYHOST_AUTH_ENABLE=true
+      - POSTFIX_RELAYHOST_USERNAME=${SMTP_RELAY_USERNAME}
+      - POSTFIX_RELAYHOST_PASSWORD=${SMTP_RELAY_PASSWORD}
+    depends_on: [db]
+    labels:
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${DATA_DIR}/addy"
+      
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.anonaddy.entrypoints=websecure"
+      - "traefik.http.routers.anonaddy.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.anonaddy.service=anonaddy-srv"
+      - "traefik.http.services.anonaddy-srv.loadbalancer.server.port=8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+
+networks:
+  traefik:
+    external: true

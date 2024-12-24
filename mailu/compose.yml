@@ -1,5 +1,3 @@
-version: '2.2'
-
 services:
 
   # External dependencies
@@ -132,13 +130,24 @@ services:
       - "traefik.http.routers.mailu-autoconfig.service=mailu-svc"
 
 
+  #resolver:
+  #  image: ${DOCKER_ORG:-ghcr.io/mailu}/${DOCKER_PREFIX:-}unbound:${MAILU_VERSION}
+  #  env_file: .env
+  #  restart: $RESTART_POLICY 
+  #  networks:
+  #    default:
+  #      ipv4_address: 192.168.203.254
+
   resolver:
-    image: ${DOCKER_ORG:-ghcr.io/mailu}/${DOCKER_PREFIX:-}unbound:${MAILU_VERSION}
+    image: ghcr.io/semihalev/sdns/sdns:v1.3.7
     env_file: .env
-    restart: $RESTART_POLICY 
+    restart: $RESTART_POLICY
+    volumes:
+      - "./dns.toml:/sdns.conf"
     networks:
       default:
         ipv4_address: 192.168.203.254
+
 
   admin:
     image: ${DOCKER_ORG:-ghcr.io/mailu}/${DOCKER_PREFIX:-}admin:${MAILU_VERSION}
@@ -147,6 +156,7 @@ services:
     volumes:
       - "${DATA_DIR}/data:/data"
       - "${DATA_DIR}/dkim:/dkim"
+      - "./wildcard_domain_dkim.py:/app/mailu/internal/views/rspamd.py"
     depends_on:
       - redis
       - resolver
