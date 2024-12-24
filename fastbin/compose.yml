@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   fastbin-rewritten:
-    image: reg.mc8051.de/jozsefsallai/fastbin-rewritten:latest
+    image: ghcr.io/gurkengewuerz/fastbin-rewritten:latest
     restart: unless-stopped
     networks: [traefik]
     volumes:
@@ -12,9 +10,10 @@ services:
       - NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000
       - STORAGE_STRATEGY=file
       - LIMITS_MAX_BODY_LENGTH=500000
-      - LIMITS_MAX_PAYLOAD_SIZE=5mb
       - FILE_STORAGE_LOCATION=storage
       - SERVER_SECRET=$SERVER_SECRET
+      - NEXT_PUBLIC_UMAMI_SCRIPT=$UMAMI_SCRIPT
+      - NEXT_PUBLIC_UMAMI_ID=$UMAMI_ID
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -23,9 +22,14 @@ services:
       - "traefik.http.routers.fastbin.service=fastbin-srv"
       - "traefik.http.services.fastbin-srv.loadbalancer.server.port=3000"
       - "traefik.http.services.fastbin-srv.loadbalancer.server.scheme=http"
+     
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/"
+
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "diun.enable=true"
+      - "telegraf.enabled=true"
     logging:
       driver: "json-file"
       options:
