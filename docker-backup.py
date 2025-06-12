@@ -120,15 +120,18 @@ def run():
   for container in client.containers():
     counter["total"] += 1
     name = container["Names"][0][1:]
-    labels = container["Labels"]
-    mounts = container["Mounts"]
-    workdirs = labels["com.docker.compose.project.working_dir"]
-    composefile = labels["com.docker.compose.project.config_files"]
-
+    
     for _ in range(5):
       print()
 
     print("Info: Processing container \"{}\"...".format(name))
+
+
+    labels = container["Labels"]
+    mounts = container["Mounts"]
+    workdirs = labels["com.docker.compose.project.working_dir"] if "com.docker.compose.project.working_dir" in labels else ""
+    composefile = labels["com.docker.compose.project.config_files"] if "com.docker.compose.project.config_files" in labels else ""
+
     if len(workdirs) == 0:
       print("Warn: No workdir found. Skipping.")
       counter["skipped"] += 1
