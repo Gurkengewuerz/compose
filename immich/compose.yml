@@ -20,7 +20,7 @@ services:
       - "traefik.http.routers.immich.entrypoints=websecure"
       - "traefik.http.routers.immich.rule=HOST(`$IMMICH_DOMAIN`)"
       - "traefik.http.routers.immich.service=immich-srv"
-      - "traefik.http.services.immich-srv.loadbalancer.server.port=3001"
+      - "traefik.http.services.immich-srv.loadbalancer.server.port=2283"
 
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
@@ -63,7 +63,7 @@ services:
 
   database:
     container_name: immich_postgres
-    image: tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
     restart: unless-stopped
     volumes:
       - "${CONTAINER_DIR}/pgdata:/var/lib/postgresql/data"
@@ -74,6 +74,8 @@ services:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_DB: ${DB_DATABASE_NAME}
       PG_DATA: /var/lib/postgresql/data
+      # Uncomment the DB_STORAGE_TYPE: 'HDD' var if your database isn't stored on SSDs
+      DB_STORAGE_TYPE: "HDD"
     logging:
       driver: "json-file"
       options:
