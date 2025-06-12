@@ -94,6 +94,8 @@ services:
       - "$BIND_ADDRESS6:143:143"
       - "$BIND_ADDRESS4:993:993"
       - "$BIND_ADDRESS6:993:993"
+      #- "$BIND_ADDRESS4:4190:4190"
+      #- "$BIND_ADDRESS6:4190:4190"
     networks:
       - traefik
       - default
@@ -139,7 +141,7 @@ services:
   #      ipv4_address: 192.168.203.254
 
   resolver:
-    image: ghcr.io/semihalev/sdns/sdns:v1.3.7
+    image: ghcr.io/semihalev/sdns/sdns:v1.5.0
     env_file: .env
     restart: $RESTART_POLICY
     volumes:
@@ -291,3 +293,4 @@ networks:
     internal: true
   traefik:
     external: true
+
