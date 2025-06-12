@@ -22,7 +22,7 @@ services:
       - "traefik.docker.network=traefik"
 
       - "traefik.http.routers.ente.entrypoints=websecure"
-      - "traefik.http.routers.ente.rule=Host(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.ente.rule=Host(`$VIRTUAL_HOST_API`)"
       - "traefik.http.routers.ente.service=ente"
       - "traefik.http.services.ente.loadbalancer.server.port=8080"
 
@@ -51,6 +51,34 @@ services:
       options:
         max-size: "512k"
         max-file: "1"
+
+  web:
+    image: ghcr.io/ente-io/web
+    ports:
+      - 3000:3000 # Photos web app
+    #  - 3001:3001 # Accounts
+    #  - 3002:3002 # Public albums
+    #  - 3003:3003 # Auth
+    #  - 3004:3004 # Cast
+    networks:
+      - internal
+      - traefik
+    environment:
+      ENTE_API_ORIGIN: https://$VIRTUAL_HOST_API
+      ENTE_ALBUMS_ORIGIN: https://$VIRTUAL_HOST_PHOTOS
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      - "traefik.http.routers.ente-photos.entrypoints=websecure"
+      - "traefik.http.routers.ente-photos.rule=Host(`$VIRTUAL_HOST_PHOTOS`)"
+      - "traefik.http.routers.ente-photos.service=ente-photos"
+      - "traefik.http.services.ente-photos.loadbalancer.server.port=3000"
+
+      - "traefik.http.routers.ente-auth.entrypoints=websecure"
+      - "traefik.http.routers.ente-auth.rule=Host(`$VIRTUAL_HOST_AUTH`)"
+      - "traefik.http.routers.ente-auth.service=ente-auth"
+      - "traefik.http.services.ente-auth.loadbalancer.server.port=3003"
 
   postgres:
     image: postgres:15

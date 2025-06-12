@@ -1,0 +1,27 @@
+services:
+  privatebin:
+    image: privatebin/nginx-fpm-alpine:latest
+    restart: unless-stopped
+    networks: [traefik]
+    volumes:
+      - ${CONTAINER_DIR}/conf/conf.php:/srv/cfg/conf.php:ro
+      - ${CONTAINER_DIR}/data:/srv/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.privatebin.entrypoints=websecure"
+      - "traefik.http.routers.privatebin.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.privatebin.service=privatebin-srv"
+      - "traefik.http.services.privatebin-srv.loadbalancer.server.port=8080"
+      - "traefik.http.services.privatebin-srv.loadbalancer.server.scheme=http"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "1"
+
+
+networks:
+  traefik:
+    external: true
+

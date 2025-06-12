@@ -4,6 +4,8 @@ db/
 acme.json
 assets
 data
+data1
+data2
 db.env
 **/.DS_Store
 backups

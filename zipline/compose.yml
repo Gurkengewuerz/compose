@@ -1,7 +1,7 @@
 services:
 
   zipline:
-    image: ghcr.io/diced/zipline
+    image: ghcr.io/diced/zipline:v4
     restart: $RESTART_POLICY
     networks: [default, traefik]
     depends_on: [postgres]
@@ -9,19 +9,12 @@ services:
       - "${CONTAINER_DIR}/zipline/uploads:/zipline/uploads"
       - "${CONTAINER_DIR}/zipline/public:/zipline/public"
     environment:
-      - CORE_RETURN_HTTPS=false
       - CORE_SECRET=$SECRET_KEY
-      - CORE_HOST=0.0.0.0
+      - CORE_HOSTNAME=0.0.0.0
       - CORE_PORT=3000
-      - CORE_DATABASE_URL=postgres://postgres:postgres@postgres/postgres
-      - CORE_LOGGER=true
-      - UPLOADER_DEFAULT_FORMAT=RANDOM
-      - WEBSITE_TITLE=$WEBSITE_TITLE
-      - UPLOADER_DISABLED_EXTENSIONS=
-      - FEATURES_INVITES=true
-      - FEATURES_OAUTH_LOGIN_ONLY=false
-      - FEATURES_USER_REGISTRATION=$ENABLE_REGISTRATION
-      - FEATURES_ROBOTS_TXT=true
+      - DATABASE_URL=postgres://postgres:postgres@postgres/zipline_v4_new
+      - DATASOURCE_TYPE=local
+      - DATASOURCE_LOCAL_DIRECTORY=/zipline/uploads
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"

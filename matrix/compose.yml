@@ -1,6 +1,6 @@
 services:
   synapse:
-    image: matrixdotorg/synapse:v1.115.0
+    image: matrixdotorg/synapse:v1.127.1
     restart: unless-stopped
     depends_on: [db]
     networks: [default, traefik]
@@ -32,7 +32,7 @@ services:
         max-file: "1"
 
   synapse-admin:
-    image: awesometechnologies/synapse-admin:latest
+    image: ghcr.io/etkecc/synapse-admin:latest
     restart: unless-stopped
     depends_on: [db]
     networks: [traefik]
@@ -52,8 +52,39 @@ services:
         max-size: "512k"
         max-file: "1"
 
+  mas:
+    image: ghcr.io/element-hq/matrix-authentication-service:latest
+    restart: unless-stopped
+    depends_on: [db]
+    networks: [default, traefik]
+    environment:
+      - MAS_CONFIG=/app/config/config.yaml
+    volumes:
+      - "${CONTAINER_DIR}/mas/config.yaml:/app/config/config.yaml:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.mas.entrypoints=websecure"
+      - "traefik.http.routers.mas.rule=HOST(`$VIRTUAL_HOST_MAS`)"
+      - "traefik.http.routers.mas.service=mas-srv"
+      - "traefik.http.services.mas-srv.loadbalancer.server.port=8080"
+
+      - "traefik.http.routers.matrix-auth.entrypoints=websecure"
+      - "traefik.http.routers.matrix-auth.rule=HOST(`$VIRTUAL_HOST`) && PathRegexp(`/_matrix/client/.+/(login|logout|refresh)`)"
+      - "traefik.http.routers.matrix-auth.service=mas-srv"
+
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/mas"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+
   db:
-    image: docker.io/postgres:12-alpine
+    image: docker.io/postgres:15-alpine
     restart: unless-stopped
     environment:
       - POSTGRES_USER=synapse
@@ -62,7 +93,7 @@ services:
       # https://element-hq.github.io/synapse/latest/postgres.html#set-up-database
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
-      - "${CONTAINER_DIR}/db/schemas:/var/lib/postgresql/data"
+      - "${CONTAINER_DIR}/db_15/schemas:/var/lib/postgresql/data"
     healthcheck:
       test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
       interval: 10s

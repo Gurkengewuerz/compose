@@ -1,7 +1,7 @@
 services:
   headscale:
     container_name: "headscale"
-    image: ghcr.io/juanfont/headscale:0.23.0
+    image: ghcr.io/juanfont/headscale:0.26.0
     command: serve
     restart: unless-stopped
     networks: [traefik]
@@ -34,22 +34,14 @@ services:
     restart: unless-stopped
     networks: [traefik]
     volumes:
-      - ${CONTAINER_DIR}/headscale/config:/var/lib/headscale
-      - ${CONTAINER_DIR}/headscale/config:/etc/headscale
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      # This is always required for Headplane to work
-      - COOKIE_SECRET=$UI_SECRET_KEY
-      - HEADSCALE_CONTAINER=headscale
-      - DISABLE_API_KEY_LOGIN=true
-      - HOST=0.0.0.0
-      - PORT=3000
+      - "${CONTAINER_DIR}/headplane/config/config.yaml:/etc/headplane/config.yaml"
+      # This should match headscale.config_path in your config.yaml
+      - "${CONTAINER_DIR}/headscale/config:/etc/headscale"
+      # Headplane stores its data in this directory
+      - "${CONTAINER_DIR}/headplane/data:/var/lib/headplane"
 
-      # This NEEDS to be set with OIDC, regardless of what's in the config
-      # This needs to be a very long-lived (999 day) API key used to create
-      # shorter ones for OIDC and allow the OIDC functionality to work
-      # docker compose exec headscale headscale apikeys create --expiration 999d
-      - ROOT_API_KEY=$API_KEY_999
+      # If you are using the Docker integration, mount the Docker socket
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"

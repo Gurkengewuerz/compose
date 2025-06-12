@@ -1,6 +1,6 @@
 services:
   server:
-    image: gitea/gitea:1.22
+    image: gitea/gitea:1.23
     restart: unless-stopped
     networks: [default, traefik]
     depends_on: [db]

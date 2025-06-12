@@ -76,6 +76,21 @@ services:
         max-size: "512k"
         max-file: "1"
 
+  ldap:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/ldap}:${AUTHENTIK_TAG:-2024.8.2}
+    ports:
+      - "3389:3389"
+      - "6636:6636"
+    environment:
+      AUTHENTIK_HOST: http://server:9000
+      AUTHENTIK_INSECURE: "true"
+      AUTHENTIK_TOKEN: $LDAP_TOKEN
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
   db:
     image: docker.io/library/postgres:16-alpine
     restart: unless-stopped
