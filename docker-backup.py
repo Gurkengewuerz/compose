@@ -152,7 +152,8 @@ def run():
       counter["failed"] += 1
       continue
     
-    toUpdate = [composefile]
+    toUpdate = []
+    toUpdate.extend(composefile.split(","))
     if LABEL_NAMES["volumes"] not in labels:
       for mount in mounts:
         toUpdate.append(mount["Source"])
@@ -164,7 +165,7 @@ def run():
             toUpdate.append(mount["Source"])
           if "Name" in mount and mount["Name"].endswith(path):
             toUpdate.append(mount["Source"])
-   
+    
     keep_last = "14"
     if LABEL_NAMES["keep"] in labels:
       if isinstance(labels[LABEL_NAMES["keep"]], int):
@@ -184,7 +185,7 @@ def run():
         webdav_client.execute_request("mkdir", name)
       except:
         pass
-
+    
     ## rustic doesn't has return codes, so just try to init
     cmd = [BACKUP_BIN, "init"]
     print("Run init: {}".format(" ".join(cmd)))
