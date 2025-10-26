@@ -1,7 +1,7 @@
 services:
   sharelatex:
     container_name: sharelatex
-    image: tuetenk0pp/sharelatex-full:5.0.3
+    image: gurken2108/sharelatex-full:5.5.2-ext-v3.1
     restart: unless-stopped
     networks: [default, traefik]
     depends_on:
@@ -37,6 +37,9 @@ services:
       OVERLEAF_NAV_TITLE: $APP_NAME
       OVERLEAF_ADMIN_EMAIL: $ADMIN_EMAIL
       COMPILE_TIMEOUT: 600
+
+      OVERLEAF_PROXY_LEARN: "true"
+      NAV_HIDE_POWERED_BY: "true"
 
       ## Set for SSL via nginx-proxy
       #VIRTUAL_HOST: 103.112.212.22
@@ -92,6 +95,24 @@ services:
 
       # SHARELATEX_PROXY_LEARN: "true"
 
+      EXTERNAL_AUTH: oidc
+
+      OVERLEAF_OIDC_PROVIDER_ID: oidc
+      OVERLEAF_OIDC_ISSUER: $OVERLEAF_OIDC_ISSUER
+      OVERLEAF_OIDC_AUTHORIZATION_URL: $OVERLEAF_OIDC_AUTHORIZATION_URL
+      OVERLEAF_OIDC_TOKEN_URL: $OVERLEAF_OIDC_TOKEN_URL
+      OVERLEAF_OIDC_USER_INFO_URL: $OVERLEAF_OIDC_USER_INFO_URL
+      OVERLEAF_OIDC_LOGOUT_URL: $OVERLEAF_OIDC_LOGOUT_URL
+      OVERLEAF_OIDC_CLIENT_ID: $OVERLEAF_OIDC_CLIENT_ID
+      OVERLEAF_OIDC_CLIENT_SECRET: $OVERLEAF_OIDC_CLIENT_SECRET
+      #OVERLEAF_OIDC_IDENTITY_SERVICE_NAME: 'Log in with Keycloak OIDC Provider'
+      OVERLEAF_OIDC_PROVIDER_NAME: $OVERLEAF_OIDC_PROVIDER_NAME
+      OVERLEAF_OIDC_PROVIDER_INFO_LINK: $OVERLEAF_OIDC_PROVIDER_INFO_LINK
+      OVERLEAF_OIDC_IS_ADMIN_FIELD: overleaf_group
+      OVERLEAF_OIDC_IS_ADMIN_FIELD_VALUE: admin
+
+      OVERLEAF_OIDC_UPDATE_USER_DETAILS_ON_LOGIN: "false"
+
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -108,13 +129,13 @@ services:
         max-file: "1"
 
   mongo:
-    image: mongo:5.0
+    image: mongo:6.0
     command: "--replSet overleaf"
     restart: unless-stopped
     volumes:
       - ${CONTAINER_DIR}/mongo:/data/db
     healthcheck:
-      test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://localhost:27017/?authSource=overleaf --quiet
       interval: 10s
       timeout: 10s
       retries: 5
@@ -125,7 +146,7 @@ services:
         max-file: "1"
 
   mongoinit:
-    image: mongo:5.0
+    image: mongo:6.0
     # this container will exit after executing the command
     restart: "no"
     depends_on:
@@ -133,7 +154,7 @@ services:
         condition: service_healthy
     entrypoint:
       [
-        "mongo",
+        "mongosh",
         "--host",
         "mongo:27017",
         "--eval",
