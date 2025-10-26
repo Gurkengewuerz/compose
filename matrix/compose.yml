@@ -1,6 +1,6 @@
 services:
   synapse:
-    image: matrixdotorg/synapse:v1.127.1
+    image: matrixdotorg/synapse:v1.139.0
     restart: unless-stopped
     depends_on: [db]
     networks: [default, traefik]
@@ -82,6 +82,60 @@ services:
         max-size: "512k"
         max-file: "1"
 
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /livekit/config.yaml
+    restart: unless-stopped
+    networks: [default, traefik]
+    volumes:
+      - "${CONTAINER_DIR}/livekit:/livekit:ro"
+    ports:
+      # Fallback Peer Connection via TCP
+      - "7881:7881"
+      # WebRTC UDP Ports
+      - "50000-50200:50000-50200/udp"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.livekit.entrypoints=websecure"
+      - "traefik.http.routers.livekit.rule=HOST(`$VIRTUAL_HOST`) && PathPrefix(`/livekit/sfu`)"
+      - "traefik.http.routers.livekit.service=livekit-srv"
+      - "traefik.http.routers.livekit.middlewares=livekit_path"
+      - "traefik.http.services.livekit-srv.loadbalancer.server.port=7880"
+      - "traefik.http.middlewares.livekit_path.stripprefix.prefixes=/livekit/sfu"
+
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/livekit"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "1"
+
+  jwt-service:
+    image: ghcr.io/element-hq/lk-jwt-service:latest-ci
+    restart: unless-stopped
+    networks: [default, traefik]
+    environment:
+      - LIVEKIT_URL=wss://$VIRTUAL_HOST/livekit/sfu
+      - LIVEKIT_SECRET=$LIVEKIT_SECRET
+      - LIVEKIT_KEY=$LIVEKIT_KEY
+      - LIVEKIT_FULL_ACCESS_HOMESERVERS=$HOMESERVER
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.matrix-sfu.entrypoints=websecure"
+      - "traefik.http.routers.matrix-sfu.rule=HOST(`$VIRTUAL_HOST`) && PathPrefix(`/livekit/jwt`)"
+      - "traefik.http.routers.matrix-sfu.service=matrix-sfu-srv"
+      - "traefik.http.routers.matrix-sfu.middlewares=matrix-sfu_path"
+      - "traefik.http.services.matrix-sfu-srv.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.matrix-sfu_path.stripprefix.prefixes=/livekit/jwt"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "1"
 
   db:
     image: docker.io/postgres:15-alpine
