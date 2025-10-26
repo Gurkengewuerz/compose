@@ -13,7 +13,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.lnmp.entrypoints=websecure"
-      - "traefik.http.routers.lnmp.rule=HOST(`$VIRTUAL_HOST`) || HOST(`www.$VIRTUAL_HOST`) || HOST(`$VIRTUAL_HOST2`)"
+      - "traefik.http.routers.lnmp.rule=HOST(`$VIRTUAL_HOST`) || HOST(`www.$VIRTUAL_HOST`)"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/etc/nginx,${CONTAINER_DIR}/web"

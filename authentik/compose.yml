@@ -78,6 +78,7 @@ services:
 
   ldap:
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/ldap}:${AUTHENTIK_TAG:-2024.8.2}
+    restart: unless-stopped
     ports:
       - "3389:3389"
       - "6636:6636"

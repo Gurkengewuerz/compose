@@ -1,25 +1,39 @@
 services:
-  privatebin:
-    image: privatebin/nginx-fpm-alpine:latest
+
+  redis:
+    image: redis:7-alpine
+    # This is required to stay in RAM only.
+    command: redis-server --save "" --appendonly no
     restart: unless-stopped
-    networks: [traefik]
-    volumes:
-      - ${CONTAINER_DIR}/conf/conf.php:/srv/cfg/conf.php:ro
-      - ${CONTAINER_DIR}/data:/srv/data
+    tmpfs:
+      - /data
+    logging:
+      driver: none
+
+  app:
+    image: cupcakearmy/cryptgeon:latest
+    networks: [default,traefik]
+    depends_on: [redis]
+    restart: unless-stopped
+    environment:
+      # Size limit for a single note.
+      SIZE_LIMIT: 4 MiB
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:8000/api/live/"]
+      interval: 1m
+      timeout: 3s
+      retries: 2
+      start_period: 5s
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.privatebin.entrypoints=websecure"
       - "traefik.http.routers.privatebin.rule=HOST(`$VIRTUAL_HOST`)"
       - "traefik.http.routers.privatebin.service=privatebin-srv"
-      - "traefik.http.services.privatebin-srv.loadbalancer.server.port=8080"
+      - "traefik.http.services.privatebin-srv.loadbalancer.server.port=8000"
       - "traefik.http.services.privatebin-srv.loadbalancer.server.scheme=http"
     logging:
-      driver: "json-file"
-      options:
-        max-size: "1k"
-        max-file: "1"
-
+      driver: none
 
 networks:
   traefik:
