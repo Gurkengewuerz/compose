@@ -3,8 +3,8 @@ services:
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2024.8.2}
     restart: unless-stopped
     user: root
-    entrypoint: /bin/bash
-    command: /custom_entrypoint.sh server
+    #entrypoint: /bin/bash
+    command: server
     networks: [default, traefik]
     environment:
       AUTHENTIK_REDIS__DB: 1
@@ -16,7 +16,7 @@ services:
     volumes:
       - ${CONTAINER_DIR}/authentik/media:/media
       - ${CONTAINER_DIR}/authentik/custom-templates:/templates
-      - ./start.sh:/custom_entrypoint.sh:ro
+      #- ./start.sh:/custom_entrypoint.sh:ro
       - ./enterprise.py:/authentik/enterprise/license.py:ro
       - ./theme:/media/custom
     env_file:
