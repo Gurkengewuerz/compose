@@ -1,7 +1,7 @@
 services:
   headscale:
     container_name: "headscale"
-    image: ghcr.io/juanfont/headscale:0.26.0
+    image: ghcr.io/juanfont/headscale:0.27.0
     command: serve
     restart: unless-stopped
     networks: [traefik]
