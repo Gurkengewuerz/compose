@@ -5,8 +5,8 @@ services:
     networks: [default, traefik]
     depends_on: [redis, db]
     volumes:
-      - ${CONTAINER_DIR}/nextcloud:/var/www/html
-      - ./opcache-recommed.ini:/usr/local/etc/php/conf.d/opcache-recommended.ini:ro
+      - "${CONTAINER_DIR}/nextcloud:/var/www/html"
+      - "./opcache-recommed.ini:/usr/local/etc/php/conf.d/opcache-recommended.ini:ro"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -36,6 +36,46 @@ services:
 
       - NEXTCLOUD_TRUSTED_DOMAINS=$VIRTUAL_HOST
       - TRUSTED_PROXIES=$TRUSTED_PROXIES
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+  
+  # docker compose exec -u 33 nextcloud ./occ notify_push:setup https://$VIRTUAL_HOST/push
+  # docker compose exec -u 33 nextcloud ./occ notify_push:metrics
+  notify-push:
+    image: nextcloud
+    restart: unless-stopped
+    user: www-data
+    entrypoint: /var/www/html/custom_apps/notify_push/bin/x86_64/notify_push /var/www/html/config/config.php
+    networks: [default, traefik]
+    depends_on: [redis, db, nextcloud]
+    environment:
+      - TZ=Europe/Berlin
+      - PORT=7867
+      - NEXTCLOUD_URL=http://nextcloud
+    volumes:
+      - "${CONTAINER_DIR}/nextcloud/custom_apps:/var/www/html/custom_apps:ro"
+      - "${CONTAINER_DIR}/nextcloud/config:/var/www/html/config"
+      - "./opcache-recommed.ini:/usr/local/etc/php/conf.d/opcache-recommended.ini:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      - "traefik.http.routers.nextcloud-push.rule=Host(`$VIRTUAL_HOST`) && PathPrefix(`/push`)"
+      - "traefik.http.routers.nextcloud-push.entrypoints=websecure"
+      - "traefik.http.services.nextcloud-push.loadbalancer.server.port=7867"
+    deploy:
+      resources:
+        limits:
+          memory: 100M
     logging:
       driver: "json-file"
       options:
@@ -81,6 +121,10 @@ services:
     depends_on: [db, redis]
     volumes:
       - ${CONTAINER_DIR}/nextcloud:/var/www/html
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     logging:
       driver: "json-file"
       options:
