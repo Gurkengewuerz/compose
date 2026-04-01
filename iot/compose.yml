@@ -20,6 +20,12 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512m
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -84,6 +90,12 @@ services:
       - "diun.enable=true"
 
       - "telegraf.enabled=true"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 200m
     logging:
       driver: "json-file"
       options:
