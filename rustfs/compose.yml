@@ -1,0 +1,72 @@
+services:
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
+    restart: unless-stopped
+    networks: [traefik, default]
+    environment:
+      # Initial Admin Credentials (change these after first login)
+      - RUSTFS_ROOT_USER=${ROOT_USER:-root}
+      - RUSTFS_ROOT_PASSWORD=${ROOT_PASSWORD}
+      # Required for Traefik routing
+      - RUSTFS_SERVER_DOMAINS=${VIRTUAL_HOST}
+      - RUSTFS_BROWSER_DOMAINS=admin.${VIRTUAL_HOST}
+    volumes:
+      # 10001
+      - "${CONTAINER_DIR}/rustfs/data:/data"
+      - "${CONTAINER_DIR}/rustfs/logs:/logs"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      # --- S3 API ---
+      - "traefik.http.routers.rustfs-s3.entrypoints=websecure"
+      - "traefik.http.routers.rustfs-s3.rule=Host(`${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.rustfs-s3.service=rustfs-s3-svc"
+      - "traefik.http.services.rustfs-s3-svc.loadbalancer.server.port=9000"
+      # Verhindert, dass Traefik die Verbindung bei langsamen Uploads kappt
+      - "traefik.http.services.rustfs-s3-svc.loadbalancer.passhostheader=true"
+      - "traefik.http.services.rustfs-s3-svc.loadbalancer.responseForwarding.flushInterval=100ms"
+
+      # Erlaubt unbegrenzte Upload-Größen (wichtig für S3)
+      - "traefik.http.middlewares.s3-limit.buffering.maxRequestBodyBytes=0"
+      - "traefik.http.routers.rustfs-s3.middlewares=s3-limit"
+
+      # --- Console / WebUI ---
+      - "traefik.http.routers.rustfs-console.entrypoints=websecure"
+      - "traefik.http.routers.rustfs-console.rule=Host(`admin.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.rustfs-console.service=rustfs-console-svc"
+      - "traefik.http.services.rustfs-console-svc.loadbalancer.server.port=9001"
+
+      # Infrastructure Labels
+      #- "backup.enable=true"
+      #- "backup.password=$RESTIC_PASSWORD"
+      #- "backup.volumes=${CONTAINER_DIR}/rustfs/data"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  # Helper container for CLI tasks
+  rustfs-cli:
+    image: rustfs/rustfs:latest
+    container_name: rustfs-cli
+    restart: unless-stopped
+    networks: [default]
+    depends_on:
+      - rustfs
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        # Wait for API to be ready
+        sleep 5
+        echo "RustFS CLI container is ready."
+        exec tail -f /dev/null
+
+networks:
+  traefik:
+    external: true
