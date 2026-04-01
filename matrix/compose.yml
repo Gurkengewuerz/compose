@@ -41,10 +41,12 @@ services:
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.synapse-admin.rule=HOST(`$VIRTUAL_HOST`) && PathPrefix(`/admin`)"
       - "traefik.http.routers.synapse-admin.middlewares=admin,admin_path"
+      - "traefik.http.routers.synapse-admin.service=synapse-admin-srv"
       - "traefik.http.middlewares.admin.redirectregex.regex=^(.*)/admin/?"
       - "traefik.http.middlewares.admin.redirectregex.replacement=$${1}/admin/"
       - "traefik.http.middlewares.admin_path.stripprefix.prefixes=/admin"
-      
+      - "traefik.http.services.synapse-admin-srv.loadbalancer.server.port=8080"
+
       - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: "json-file"

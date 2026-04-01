@@ -63,6 +63,7 @@ services:
     networks:
       - internal
       - traefik
+    restart: unless-stopped
     environment:
       ENTE_API_ORIGIN: https://$VIRTUAL_HOST_API
       ENTE_ALBUMS_ORIGIN: https://$VIRTUAL_HOST_PHOTOS
