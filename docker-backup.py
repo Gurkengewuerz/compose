@@ -251,7 +251,7 @@ def run():
             counter["failed"] += 1
             continue
 
-        to_update = [composefile] if composefile else []
+        to_update = [f.strip() for f in composefile.split(",") if f.strip()] if composefile else []
         if LABEL_NAMES["volumes"] not in labels:
             for mount in mounts:
                 to_update.append(mount["Source"])
