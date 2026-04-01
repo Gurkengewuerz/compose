@@ -44,7 +44,7 @@ services:
         max-file: "1"
 
   backup:
-    image: tiredofit/db-backup:4.0.19
+    image: tiredofit/db-backup:4.1.19
     restart: unless-stopped
     depends_on: [db]
     volumes:
@@ -52,7 +52,7 @@ services:
     environment:
       - TIMEZONE=UTC
       - CONTAINER_ENABLE_MONITORING=FALSE
-      - DEFAULT_LOG_LEVEL=WARN
+      - DEFAULT_LOG_LEVEL=DEBUG
 
       - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
       - BACKUP_JOB_CONCURRENCY=1
