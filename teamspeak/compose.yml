@@ -25,7 +25,7 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/teamspeak"
-      - "backup.exclude=*/files/*,*/logs/*"
+      - "backup.exclude=!**/files,!**/logs"
     logging:
       driver: "json-file"
       options:

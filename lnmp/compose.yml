@@ -19,7 +19,7 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/etc/nginx,${CONTAINER_DIR}/web"
-      - "backup.exclude=*/downloads/*,*/pma/*,*/ts3wi/*"
+      - "backup.exclude=!**/downloads,!**/pma,!**/ts3wi"
     logging:
       driver: "json-file"
       options:
