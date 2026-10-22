@@ -26,3 +26,4 @@ diun/diun.yml
 *.tgz
 _migration/
 backup-pre-*/
+*.gz
