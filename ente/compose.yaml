@@ -115,11 +115,11 @@ services:
     volumes:
       - "$CONTAINER_DIR/minio:/data"
     environment:
-      MINIO_ROOT_USER: test
-      MINIO_ROOT_PASSWORD: testtest
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?}
       # Alias fuer den Healthcheck - wir laufen nicht auf dem Default-Port 9000,
       # daher taugt der eingebaute "local"-Alias von mc nicht.
-      MC_HOST_local: http://test:testtest@localhost:3200
+      MC_HOST_local: http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@localhost:3200
     # Gilt erst als healthy, wenn der Server antwortet UND post_start die Buckets
     # angelegt hat. Damit kann museum nicht in einen leeren Store hineinstarten.
     healthcheck:
@@ -132,7 +132,7 @@ services:
     post_start:
       - command: |
           sh -c '
-          while ! mcli alias set h0 http://minio:3200 test testtest 2>/dev/null
+          while ! mcli alias set h0 http://minio:3200 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" 2>/dev/null
           do
             echo "Waiting for silo..."
             sleep 0.5
