@@ -1,22 +1,31 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "512k"
+    max-file: "1"
+
 services:
   museum:
-    image: ghcr.io/ente-io/server
+    image: ghcr.io/ente/server
     restart: unless-stopped
     volumes:
       - "$CONTAINER_DIR/logs:/var/logs"
       # https://github.com/ente-io/ente/blob/main/server/configurations/local.yaml
       - "$CONTAINER_DIR/museum.yaml:/museum.yaml:ro"
-      - "./scripts/compose/credentials.yaml:/credentials.yaml:ro"
+      - "$CONTAINER_DIR/credentials.yaml:/credentials.yaml:ro"
       - "$CONTAINER_DIR/data:/data:ro"
     depends_on:
       postgres:
         condition: service_healthy
+      # Erst starten, wenn der Objektstore oben ist UND die Buckets existieren.
+      minio:
+        condition: service_healthy
     environment:
-      # Pass-in the config to connect to the DB and MinIO
+      # Pass-in the config to connect to the DB and the S3 store
       ENTE_CREDENTIALS_FILE: /credentials.yaml
-    networks:
-      - internal
-      - traefik
+    networks: [traefik, default]
+    extra_hosts:
+      - "${VIRTUAL_HOST_S3}:${S3_HOST_IP:-host-gateway}"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -29,44 +38,21 @@ services:
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=$CONTAINER_DIR/data"
-
-      - "diun.enable=true"
-
-      - "telegraf.enabled=true"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "512k"
-        max-file: "1"
-
-  # Resolve "localhost:3200" in the museum container to the minio container.
-  socat:
-    image: alpine/socat
-    command: "TCP-LISTEN:3200,fork,reuseaddr TCP:minio:3200"
-    restart: unless-stopped
-    network_mode: service:museum
-    depends_on: [museum]
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "512k"
-        max-file: "1"
+    logging: *default-logging
 
   web:
-    image: ghcr.io/ente-io/web
-    ports:
-      - 3000:3000 # Photos web app
-    #  - 3001:3001 # Accounts
-    #  - 3002:3002 # Public albums
-    #  - 3003:3003 # Auth
-    #  - 3004:3004 # Cast
-    networks:
-      - internal
-      - traefik
+    image: ghcr.io/ente/web
+    # Das web-Image bedient 3000 Photos, 3001 Accounts, 3002 Albums, 3003 Auth,
+    # 3004 Cast, 3005 Share (Public Locker), 3006 Embed, 3008 Paste,
+    # 3009 Locker, 3010 Memories. Routing laeuft komplett ueber Traefik.
+    networks: [traefik, default]
     restart: unless-stopped
     environment:
       ENTE_API_ORIGIN: https://$VIRTUAL_HOST_API
-      ENTE_ALBUMS_ORIGIN: https://$VIRTUAL_HOST_PHOTOS
+      # Muss auf die Public-Albums-App (Port 3002) zeigen, nicht auf die Photos-App.
+      # Achtung: aktuelle web-Images werten offiziell nur noch ENTE_API_ORIGIN aus,
+      # massgeblich ist der apps:-Block in der museum.yaml. Hier zur Sicherheit belassen.
+      ENTE_ALBUMS_ORIGIN: https://$VIRTUAL_HOST_ALBUMS
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
@@ -76,10 +62,28 @@ services:
       - "traefik.http.routers.ente-photos.service=ente-photos"
       - "traefik.http.services.ente-photos.loadbalancer.server.port=3000"
 
+      - "traefik.http.routers.ente-albums.entrypoints=websecure"
+      - "traefik.http.routers.ente-albums.rule=Host(`$VIRTUAL_HOST_ALBUMS`)"
+      - "traefik.http.routers.ente-albums.service=ente-albums"
+      - "traefik.http.services.ente-albums.loadbalancer.server.port=3002"
+
+      # Ente Locker - Dokumententresor
+      - "traefik.http.routers.ente-locker.entrypoints=websecure"
+      - "traefik.http.routers.ente-locker.rule=Host(`$VIRTUAL_HOST_LOCKER`)"
+      - "traefik.http.routers.ente-locker.service=ente-locker"
+      - "traefik.http.services.ente-locker.loadbalancer.server.port=3009"
+
+      # Oeffentliche Locker-Freigabelinks (eigene App auf 3005)
+      - "traefik.http.routers.ente-locker-share.entrypoints=websecure"
+      - "traefik.http.routers.ente-locker-share.rule=Host(`$VIRTUAL_HOST_LOCKER_SHARE`)"
+      - "traefik.http.routers.ente-locker-share.service=ente-locker-share"
+      - "traefik.http.services.ente-locker-share.loadbalancer.server.port=3005"
+
       - "traefik.http.routers.ente-auth.entrypoints=websecure"
       - "traefik.http.routers.ente-auth.rule=Host(`$VIRTUAL_HOST_AUTH`)"
       - "traefik.http.routers.ente-auth.service=ente-auth"
       - "traefik.http.services.ente-auth.loadbalancer.server.port=3003"
+    logging: *default-logging
 
   postgres:
     image: postgres:15
@@ -90,61 +94,79 @@ services:
       POSTGRES_USER: pguser
       POSTGRES_PASSWORD: pgpass
       POSTGRES_DB: ente_db
-    # Wait for postgres to be accept connections before starting museum.
+    # Wait for postgres to accept connections before starting museum.
     healthcheck:
       test: ["CMD","pg_isready","-q","-d","ente_db","-U","pguser"]
-      interval: 1s
+      start_period: 30s
+      start_interval: 1s
+      interval: 30s
       timeout: 5s
-      retries: 20
-    networks:
-      - internal
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "512k"
-        max-file: "1"
+      retries: 5
+    logging: *default-logging
 
+  # SILO - community fork of minio/minio (upstream stopped community releases).
+  # Drop-in on S3-API, MINIO_* env vars und On-Disk-Format; Web-Console ist wieder drin.
+  # Service heisst weiterhin "minio", damit socat/museum-Config unveraendert bleiben.
   minio:
-    image: minio/minio
+    image: pgsty/silo:RELEASE.2026-09-03T13-18-01Z
     command: server /data --address ":3200" --console-address ":3201"
     restart: unless-stopped
+    networks: [traefik, default]
     volumes:
       - "$CONTAINER_DIR/minio:/data"
     environment:
       MINIO_ROOT_USER: test
       MINIO_ROOT_PASSWORD: testtest
-    networks:
-      - internal
+      # Alias fuer den Healthcheck - wir laufen nicht auf dem Default-Port 9000,
+      # daher taugt der eingebaute "local"-Alias von mc nicht.
+      MC_HOST_local: http://test:testtest@localhost:3200
+    # Gilt erst als healthy, wenn der Server antwortet UND post_start die Buckets
+    # angelegt hat. Damit kann museum nicht in einen leeren Store hineinstarten.
+    healthcheck:
+      test: ["CMD-SHELL", "mc ls local/b2-eu-cen >/dev/null 2>&1"]
+      start_period: 60s
+      start_interval: 2s
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    post_start:
+      - command: |
+          sh -c '
+          while ! mcli alias set h0 http://minio:3200 test testtest 2>/dev/null
+          do
+            echo "Waiting for silo..."
+            sleep 0.5
+          done
+
+          cd /data
+
+          mcli mb -p b2-eu-cen
+          mcli mb -p wasabi-eu-central-2-v3
+          mcli mb -p scw-eu-fr-v3
+          '
     labels:
+      # S3-API oeffentlich erreichbar machen: die presigned Upload-URLs, die museum
+      # ausstellt, muessen vom Handy aus aufloesbar sein - nicht nur containerintern.
+      # Die Console (3201) wird bewusst NICHT exponiert.
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+
+      - "traefik.http.routers.ente-s3.entrypoints=websecure"
+      - "traefik.http.routers.ente-s3.rule=Host(`$VIRTUAL_HOST_S3`)"
+      - "traefik.http.routers.ente-s3.service=ente-s3"
+      - "traefik.http.services.ente-s3.loadbalancer.server.port=3200"
+
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=$CONTAINER_DIR/minio"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "512k"
-        max-file: "1"
-
-  minio-provision:
-    image: minio/mc
-    depends_on: [minio]
-    volumes:
-      - "./scripts/compose/minio-provision.sh:/provision.sh:ro"
-      - "$CONTAINER_DIR/minio:/data"
-    networks:
-      - internal
-    entrypoint: sh /provision.sh
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "512k"
-        max-file: "1"
+    logging: *default-logging
 
   backup:
-    image: tiredofit/db-backup:4.0.19
+    image: ghcr.io/nfrastack/db-backup:5
     restart: unless-stopped
-    depends_on: [postgres]
-    networks: [internal]
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - "$CONTAINER_DIR/db-backup:/backup"
     environment:
@@ -166,16 +188,12 @@ services:
       - DB01_USER=pguser
       - DB01_PASS=pgpass
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=$CONTAINER_DIR/db-backup"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "512k"
-        max-file: "1"
+    logging: *default-logging
 
 networks:
   traefik:
     external: true
-  internal:
