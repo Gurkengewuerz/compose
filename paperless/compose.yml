@@ -36,10 +36,6 @@ services:
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=$CONTAINER_DIR/paperless/data,$CONTAINER_DIR/paperless/media"
 
-      - "diun.enable=true"
-
-      - "telegraf.enabled=true"
-
   db:
     image: mariadb:lts
     restart: unless-stopped

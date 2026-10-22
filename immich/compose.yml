@@ -66,7 +66,7 @@ services:
     image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
     restart: unless-stopped
     volumes:
-      - "${CONTAINER_DIR}/pgdata:/var/lib/postgresql/data"
+      - "${CONTAINER_DIR_LOCAL}/pgdata:/var/lib/postgresql/data"
     env_file:
       - .env
     environment:
@@ -83,7 +83,7 @@ services:
         max-file: "1"
 
   backup:
-    image: tiredofit/db-backup:4.0.19
+    image: ghcr.io/nfrastack/db-backup:5
     restart: unless-stopped
     depends_on: [database]
     volumes:
@@ -107,6 +107,7 @@ services:
       - DB01_USER=${DB_USERNAME}
       - DB01_PASS=${DB_PASSWORD}
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"

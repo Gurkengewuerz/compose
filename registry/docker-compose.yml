@@ -1,0 +1,48 @@
+services:
+
+  registry:
+    image: registry:2
+    restart: unless-stopped
+    volumes:
+      - ./data/registry:/var/lib/registry
+      - ./data/config/config.yml:/etc/docker/registry/config.yml
+      - ./data/config/htpasswd:/etc/docker/registry/htpasswd
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  ui:
+    image: joxit/docker-registry-ui:latest
+    restart: unless-stopped
+    environment:
+      - REGISTRY_TITLE=mc8051 Container registry
+      - NGINX_PROXY_PASS_URL=http://registry:5000
+      - SINGLE_REGISTRY=true
+      - CATALOG_ELEMENTS_LIMIT=1000
+      - DELETE_IMAGES=true
+    depends_on:
+      - registry
+    networks: [traefik, default]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.dockerreg.entrypoints=websecure"
+      - "traefik.http.routers.dockerreg.rule=Host(`reg.mc8051.de`)"
+      - "traefik.http.routers.dockerreg.service=dockerreg-srv"
+      - "traefik.http.services.dockerreg-srv.loadbalancer.server.port=80"
+      - "traefik.http.routers.dockerreg.middlewares=regauth@docker"
+      - "traefik.http.middlewares.regauth.basicauth.users=${REGISTRY_BASIC_AUTH}"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+networks:
+  traefik:
+    external: true

@@ -37,6 +37,8 @@ services:
       retries: 3
       start_period: 90s
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.vaultwarden.rule=Host(`${VIRTUAL_HOST}`)"
@@ -44,14 +46,14 @@ services:
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
 
+      - "traefik.http.routers.vaultwarden-internal.rule=Host(`${VIRTUAL_INTERNAL_HOST}`)"
+      - "traefik.http.routers.vaultwarden-internal.service=vaultwarden"
+      - "traefik.http.routers.vaultwarden-internal.entrypoints=web"
+      - "traefik.http.routers.vaultwarden-internal.tls=true"
+
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/vaultwarden"
-
-      - "diun.enable=true"
-
-      - "telegraf.enabled=true"
-
     logging:
       driver: "json-file"
       options:
@@ -73,9 +75,11 @@ services:
       options:
         max-size: "512k"
         max-file: "1"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 
   backup:
-    image: tiredofit/db-backup:4.0.19
+    image: ghcr.io/nfrastack/db-backup:5
     restart: unless-stopped
     depends_on: [db]
     volumes:
@@ -99,6 +103,8 @@ services:
       - DB01_USER=vaultwarden
       - DB01_PASS=vaultwarden
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"

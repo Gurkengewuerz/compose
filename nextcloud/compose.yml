@@ -1,6 +1,6 @@
 services:
   nextcloud:
-    image: nextcloud
+    image: nextcloud:35-apache
     restart: unless-stopped
     networks: [default, traefik]
     depends_on: [redis, db]
@@ -51,7 +51,7 @@ services:
   # docker compose exec -u 33 nextcloud ./occ notify_push:setup https://$VIRTUAL_HOST/push
   # docker compose exec -u 33 nextcloud ./occ notify_push:metrics
   notify-push:
-    image: nextcloud
+    image: nextcloud:35-apache
     restart: unless-stopped
     user: www-data
     entrypoint: /var/www/html/custom_apps/notify_push/bin/x86_64/notify_push /var/www/html/config/config.php
@@ -84,12 +84,12 @@ services:
 
   db:
     image: mariadb:lts
-    command: --transaction-isolation=READ-COMMITTED --log-bin=ROW --innodb_read_only_compressed=OF
+    command: --transaction-isolation=READ-COMMITTED --innodb_read_only_compressed=OFF --skip-log-bin --innodb_buffer_pool_size=512M --innodb_log_file_size=256M --long_query_time=2
     restart: unless-stopped
     volumes:
-      - "${CONTAINER_DIR}/db:/var/lib/mysql"
+      - "${CONTAINER_DIR_LOCAL}/db:/var/lib/mysql"
       - "/etc/localtime:/etc/localtime:ro"
-      - "/etc/timezone:/etc/timezone:ro"
+      #- "/etc/timezone:/etc/timezone:ro"
     environment:
       - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
       - MYSQL_PASSWORD=$DB_PASSWORD
@@ -115,7 +115,7 @@ services:
         max-file: "1"
 
   nextcloud-cron:
-    image: nextcloud
+    image: nextcloud:35-apache
     entrypoint: /cron.sh
     restart: unless-stopped
     depends_on: [db, redis]
@@ -132,7 +132,7 @@ services:
         max-file: "1"
 
   backup:
-    image: tiredofit/db-backup:4.0.19
+    image: ghcr.io/nfrastack/db-backup:5
     restart: unless-stopped
     depends_on: [db]
     volumes:
@@ -156,6 +156,7 @@ services:
       - DB01_USER=$DB_USER
       - DB01_PASS=$DB_PASSWORD
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"

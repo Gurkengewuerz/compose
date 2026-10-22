@@ -31,6 +31,8 @@ services:
       - "./traefik.yml:/traefik.yml:ro"
       - "./config:/etc/traefik/config:ro"
       - "${CONTAINER_DIR}/certificates:/var/certificates"
+    env_file:
+      - .env
     environment:
       TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_EMAIL: $ACME_MAIL
     labels:
@@ -46,7 +48,9 @@ services:
       - "diun.enable=true"
 
       - "telegraf.enabled=true"
-
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
     logging:

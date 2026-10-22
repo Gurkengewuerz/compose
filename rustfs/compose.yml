@@ -26,9 +26,6 @@ services:
       - "traefik.http.routers.rustfs-s3.rule=Host(`${VIRTUAL_HOST}`)"
       - "traefik.http.routers.rustfs-s3.service=rustfs-s3-svc"
       - "traefik.http.services.rustfs-s3-svc.loadbalancer.server.port=9000"
-      # Verhindert, dass Traefik die Verbindung bei langsamen Uploads kappt
-      - "traefik.http.services.rustfs-s3-svc.loadbalancer.passhostheader=true"
-      - "traefik.http.services.rustfs-s3-svc.loadbalancer.responseForwarding.flushInterval=100ms"
 
       # Erlaubt unbegrenzte Upload-Größen (wichtig für S3)
       - "traefik.http.middlewares.s3-limit.buffering.maxRequestBodyBytes=0"
@@ -49,23 +46,6 @@ services:
       options:
         max-size: "512k"
         max-file: "1"
-
-  # Helper container for CLI tasks
-  rustfs-cli:
-    image: rustfs/rustfs:latest
-    container_name: rustfs-cli
-    restart: unless-stopped
-    networks: [default]
-    depends_on:
-      - rustfs
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        # Wait for API to be ready
-        sleep 5
-        echo "RustFS CLI container is ready."
-        exec tail -f /dev/null
 
 networks:
   traefik:
