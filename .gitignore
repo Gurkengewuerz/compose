@@ -13,3 +13,16 @@ keycloak/themes
 keycloak/providers
 traefik/config/custom.yml
 diun/diun.yml
+
+# Backups, Dumps und Migrationsreste nie committen
+*.bak
+*.bak-*
+*.orig
+*.sql
+*.sql.*
+*.dump
+*.tar
+*.tar.*
+*.tgz
+_migration/
+backup-pre-*/
