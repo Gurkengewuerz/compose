@@ -168,6 +168,9 @@ print(f"Info: Using backend '{BACKEND_TYPE}'")
 
 def shell():
     repo_target = sys.argv[2]
+    if "/" in repo_target:
+        print("Error: pass only the container name, e.g. `shell nextcloud-backup-1`")
+        sys.exit(1)
     _, extra_env = _repo_url_for_container(REPO_BASE, repo_target)
     display_url = f"{REPO_BASE}/{repo_target}" if REPO_BASE else repo_target
     print("Using repository", display_url)
@@ -210,117 +213,117 @@ def send_notification(failed, msg):
         print("Failed to send Notification", err)
 
 
-def run():
-    client = docker.APIClient(base_url="unix://var/run/docker.sock")
+def _backup_container(container, counter):
+    """Backup a single container. Updates counter in-place."""
+    counter["total"] += 1
+    name = container["Names"][0][1:]
 
-    counter = {
-        "total": 0,
-        "skipped": 0,
-        "success": 0,
-        "failed": 0,
+    print(f"\n\n\n\n\nInfo: Processing container \"{name}\"...")
+
+    labels = container["Labels"]
+    mounts = container["Mounts"]
+    workdirs = labels.get("com.docker.compose.project.working_dir", "")
+    composefile = labels.get("com.docker.compose.project.config_files", "")
+
+    if not workdirs:
+        print("Warn: No workdir found. Skipping.")
+        counter["skipped"] += 1
+        return
+
+    if not mounts:
+        print("Info: No mounts found. Skipping.")
+        counter["skipped"] += 1
+        return
+
+    if LABEL_NAMES["enabled"] not in labels or labels[LABEL_NAMES["enabled"]] == "False":
+        print("Info: Backup not enabled. Skipping.")
+        counter["skipped"] += 1
+        return
+
+    if LABEL_NAMES["password"] not in labels or not labels[LABEL_NAMES["password"]]:
+        print("Failure: Password is missing. Skipping.")
+        counter["failed"] += 1
+        return
+
+    to_update = [f.strip() for f in composefile.split(",") if f.strip()] if composefile else []
+    if LABEL_NAMES["volumes"] not in labels:
+        for mount in mounts:
+            to_update.append(mount["Source"])
+    else:
+        for vol in labels[LABEL_NAMES["volumes"]].split(","):
+            path = vol.replace("./", workdirs + "/").rstrip("/")
+            for mount in mounts:
+                if mount["Source"] == path:
+                    to_update.append(mount["Source"])
+                if "Name" in mount and mount["Name"].endswith(path):
+                    to_update.append(mount["Source"])
+
+    keep_last = "14"
+    if LABEL_NAMES["keep"] in labels:
+        val = labels[LABEL_NAMES["keep"]]
+        if str(val).isdigit():
+            keep_last = str(val)
+        else:
+            print(f"Invalid value for {LABEL_NAMES['keep']}: '{val}'. Defaulting to keep last {keep_last} backups")
+    else:
+        print(f"Defaulting to keep last {keep_last} backups")
+
+    repo_display, extra_env = _repo_url_for_container(REPO_BASE, name)
+    print("Repository:", repo_display)
+
+    process_env = {
+        **os.environ,
+        **VIRTENV_VARS,
+        **extra_env,
+        "RUSTIC_PASSWORD": labels[LABEL_NAMES["password"]],
     }
 
-    for container in client.containers():
-        counter["total"] += 1
-        name = container["Names"][0][1:]
+    _ensure_remote_dir(name)
 
-        print(f"\n\n\n\n\nInfo: Processing container \"{name}\"...")
-
-        labels = container["Labels"]
-        mounts = container["Mounts"]
-        workdirs = labels.get("com.docker.compose.project.working_dir", "")
-        composefile = labels.get("com.docker.compose.project.config_files", "")
-
-        if not workdirs:
-            print("Warn: No workdir found. Skipping.")
-            counter["skipped"] += 1
-            continue
-
-        if not mounts:
-            print("Info: No mounts found. Skipping.")
-            counter["skipped"] += 1
-            continue
-
-        if LABEL_NAMES["enabled"] not in labels or labels[LABEL_NAMES["enabled"]] == "False":
-            print("Info: Backup not enabled. Skipping.")
-            counter["skipped"] += 1
-            continue
-
-        if LABEL_NAMES["password"] not in labels or not labels[LABEL_NAMES["password"]]:
-            print("Failure: Password is missing. Skipping.")
+    # rustic init (idempotent – will fail harmlessly if already initialised)
+    cmd = [BACKUP_BIN, "init"]
+    print(f"Run init: {' '.join(cmd)}")
+    process = subprocess.run(cmd, env=process_env, capture_output=True, text=True)
+    if process.returncode == 0:
+        print("Success: autoinitialize repository")
+    else:
+        stderr = (process.stderr or "").lower()
+        # Rustic says something like "config file already exists" when initialized
+        if "already" in stderr or "exists" in stderr:
+            print("Info: repository already initialised")
+        else:
+            print(f"Failure: init failed:\n{process.stderr}")
             counter["failed"] += 1
-            continue
+            return
 
-        to_update = [f.strip() for f in composefile.split(",") if f.strip()] if composefile else []
-        if LABEL_NAMES["volumes"] not in labels:
-            for mount in mounts:
-                to_update.append(mount["Source"])
-        else:
-            for vol in labels[LABEL_NAMES["volumes"]].split(","):
-                path = vol.replace("./", workdirs + "/").rstrip("/")
-                for mount in mounts:
-                    if mount["Source"] == path:
-                        to_update.append(mount["Source"])
-                    if "Name" in mount and mount["Name"].endswith(path):
-                        to_update.append(mount["Source"])
+    exclude_list = []
+    if LABEL_NAMES["exclude"] in labels:
+        for f in labels[LABEL_NAMES["exclude"]].split(","):
+            exclude_list.extend(["--glob", f])
 
-        keep_last = "14"
-        if LABEL_NAMES["keep"] in labels:
-            val = labels[LABEL_NAMES["keep"]]
-            if str(val).isdigit():
-                keep_last = str(val)
-            else:
-                print(f"Invalid value for {LABEL_NAMES['keep']}: '{val}'. Defaulting to keep last {keep_last} backups")
-        else:
-            print(f"Defaulting to keep last {keep_last} backups")
+    print("Running Backup")
+    cmd = [BACKUP_BIN, "backup", "--tag", name, *exclude_list, *to_update]
+    print(f"Run backup: {' '.join(cmd)}")
+    process = subprocess.run(cmd, env=process_env)
+    if process.returncode == 0:
+        print("Success: Backup ran successfully")
+    else:
+        print("Failure: failed to backup")
+        counter["failed"] += 1
+        return
 
-        repo_display, extra_env = _repo_url_for_container(REPO_BASE, name)
-        print("Repository:", repo_display)
+    print(f"Pruning keep last {keep_last} backups")
+    cmd = [BACKUP_BIN, "forget", "--keep-last", keep_last, "--prune"]
+    process = subprocess.run(cmd, env=process_env)
+    if process.returncode == 0:
+        print("Success: removed unwanted snapshots")
+    else:
+        print("Failure: removing old snapshots failed")
 
-        process_env = {
-            **os.environ,
-            **VIRTENV_VARS,
-            **extra_env,
-            "RUSTIC_PASSWORD": labels[LABEL_NAMES["password"]],
-        }
+    counter["success"] += 1
 
-        _ensure_remote_dir(name)
 
-        # rustic init (idempotent – will fail harmlessly if already initialised)
-        cmd = [BACKUP_BIN, "init"]
-        print(f"Run init: {' '.join(cmd)}")
-        process = subprocess.run(cmd, env=process_env)
-        if process.returncode == 0:
-            print("Success: autoinitialize repository")
-        else:
-            print("Info: init returned non-zero (repository likely already initialised)")
-
-        exclude_list = []
-        if LABEL_NAMES["exclude"] in labels:
-            for f in labels[LABEL_NAMES["exclude"]].split(","):
-                exclude_list.extend(["--glob", f])
-
-        print("Running Backup")
-        cmd = [BACKUP_BIN, "backup", "--tag", name, *exclude_list, *to_update]
-        print(f"Run backup: {' '.join(cmd)}")
-        process = subprocess.run(cmd, env=process_env)
-        if process.returncode == 0:
-            print("Success: Backup ran successfully")
-        else:
-            print("Failure: failed to backup")
-            counter["failed"] += 1
-            continue
-
-        print(f"Pruning keep last {keep_last} backups")
-        cmd = [BACKUP_BIN, "forget", "--keep-last", keep_last, "--prune"]
-        process = subprocess.run(cmd, env=process_env)
-        if process.returncode == 0:
-            print("Success: removed unwanted snapshots")
-        else:
-            print("Failure: removing old snapshots failed")
-
-        counter["success"] += 1
-
+def _print_stats_and_notify(counter):
     print("\n\nBackup Stats")
     print("####################")
 
@@ -335,14 +338,67 @@ def run():
     send_notification(counter["failed"] > 0, stats)
 
 
+def run():
+    client = docker.APIClient(base_url="unix://var/run/docker.sock")
+
+    counter = {
+        "total": 0,
+        "skipped": 0,
+        "success": 0,
+        "failed": 0,
+    }
+
+    for container in client.containers():
+        _backup_container(container, counter)
+
+    _print_stats_and_notify(counter)
+
+
+def run_single(target_name):
+    """Run backup for a single container by name (or compose project)."""
+    client = docker.APIClient(base_url="unix://var/run/docker.sock")
+
+    counter = {
+        "total": 0,
+        "skipped": 0,
+        "success": 0,
+        "failed": 0,
+    }
+
+    matches = []
+    for container in client.containers():
+        name = container["Names"][0][1:]
+        project = container["Labels"].get("com.docker.compose.project", "")
+        if name == target_name or project == target_name:
+            matches.append((name, container))
+
+    if not matches:
+        print(f"Failure: no running container or compose project matches '{target_name}'")
+        sys.exit(1)
+
+    print(f"Info: {len(matches)} container(s) matched '{target_name}': {', '.join(n for n, _ in matches)}")
+
+    for _, container in matches:
+        _backup_container(container, counter)
+
+    _print_stats_and_notify(counter)
+
+
+def _usage():
+    print(f"{sys.argv[0]} - start backup for all containers")
+    print(f"{sys.argv[0]} run <container|project> - start backup for a single container or compose project")
+    print(f"{sys.argv[0]} shell <repository> - start shell for repository")
+    print(f"{sys.argv[0]} ls - list repositories in remote")
+
+
 if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "shell":
         shell()
+    elif len(sys.argv) == 3 and sys.argv[1] == "run":
+        run_single(sys.argv[2])
     elif len(sys.argv) == 2 and sys.argv[1] == "ls":
         ls()
     elif len(sys.argv) == 1:
         run()
     else:
-        print(f"{sys.argv[0]} - start backup")
-        print(f"{sys.argv[0]} shell <repository> - start shell for repository")
-        print(f"{sys.argv[0]} ls - list repositories in remote")
+        _usage()
