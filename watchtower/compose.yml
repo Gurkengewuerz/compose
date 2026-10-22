@@ -1,16 +1,17 @@
 services:
   watchtower:
-    image: containrrr/watchtower
+    image: nickfedor/watchtower
     restart: always
     networks: [traefik]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /etc/timezone:/etc/timezone:ro
+      - /home/user/.docker/config.json:/config.json
     environment:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_LABEL_ENABLE=true
       - WATCHTOWER_INCLUDE_RESTARTING=true
-      - WATCHTOWER_POLL_INTERVAL=7200
+      - WATCHTOWER_POLL_INTERVAL=600
       - WATCHTOWER_NOTIFICATION_URL=$WATCHTOWER_NOTIFICATION_URL
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

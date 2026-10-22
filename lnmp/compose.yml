@@ -7,9 +7,11 @@ services:
       - php
       - db
     volumes:
-      - ${CONTAINER_DIR}/etc/nginx/:/etc/nginx/conf.d/
-      - ${CONTAINER_DIR}/web:/var/www/html
+      - "${CONTAINER_DIR}/etc/nginx/:/etc/nginx/conf.d/"
+      - "${CONTAINER_DIR}/web:/var/www/html"
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.lnmp.entrypoints=websecure"
@@ -29,19 +31,9 @@ services:
     restart: unless-stopped
     networks: [default, traefik]
     volumes:
-      - ${CONTAINER_DIR}/web:/var/www/html
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "512k"
-        max-file: "1"
-
-  php7:
-    image: chialab/php:7.4-fpm
-    restart: unless-stopped
-    networks: [default, traefik]
-    volumes:
-      - ${CONTAINER_DIR}/web:/var/www/html
+      - "${CONTAINER_DIR}/web:/var/www/html"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: "json-file"
       options:
@@ -52,10 +44,12 @@ services:
     image: mariadb:lts
     restart: unless-stopped
     volumes:
-      - ${CONTAINER_DIR}/db:/var/lib/mysql
+      - "${CONTAINER_DIR}/db:/var/lib/mysql"
     environment:
       MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
       MYSQL_DATABASE: default
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: "json-file"
       options:
@@ -63,11 +57,11 @@ services:
         max-file: "1"
 
   backup:
-    image: tiredofit/db-backup:4.0.19
+    image: ghcr.io/nfrastack/db-backup:5
     restart: unless-stopped
     depends_on: [db]
     volumes:
-      - ${CONTAINER_DIR}/db-backup:/backup
+      - "${CONTAINER_DIR}/db-backup:/backup"
     environment:
       - TIMEZONE=UTC
       - CONTAINER_ENABLE_MONITORING=FALSE
@@ -87,6 +81,7 @@ services:
       - DB01_USER=root
       - DB01_PASS=$DB_ROOT_PASSWORD
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"

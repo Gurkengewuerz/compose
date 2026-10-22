@@ -1,0 +1,118 @@
+services:
+  server:
+    image: codeberg.org/forgejo/forgejo:17.0
+    restart: unless-stopped
+    networks: [default, traefik]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${SSH_PORT}:22"
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - FORGEJO__database__DB_TYPE=mysql
+      - FORGEJO__database__HOST=db:3306
+      - FORGEJO__database__NAME=forgejo
+      - FORGEJO__database__USER=forgejo
+      - FORGEJO__database__PASSWD=${DB_PASSWORD}
+      - FORGEJO__server__DOMAIN=${VIRTUAL_HOST}
+      - FORGEJO__server__SSH_DOMAIN=${VIRTUAL_HOST}
+      - FORGEJO__server__ROOT_URL=https://${VIRTUAL_HOST}/
+      - FORGEJO__server__SSH_PORT=${SSH_PORT}
+      - FORGEJO__actions__DEFAULT_ACTIONS_URL=https://github.com
+      - FORGEJO__ui__DEFAULT_THEME=forgejo-auto
+      - FORGEJO__ui__THEMES=forgejo-auto,forgejo-light,forgejo-dark,forgejo-auto-deuteranopia-protanopia,forgejo-light-deuteranopia-protanopia,forgejo-dark-deuteranopia-protanopia,forgejo-auto-tritanopia,forgejo-light-tritanopia,forgejo-dark-tritanopia
+    volumes:
+      - "${CONTAINER_DIR}/forgejo:/data"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.forgejo.entrypoints=websecure"
+      - "traefik.http.routers.forgejo.rule=HOST(`$VIRTUAL_HOST`)"
+      - "traefik.http.routers.forgejo.service=forgejo-srv"
+      - "traefik.http.services.forgejo-srv.loadbalancer.server.port=3000"
+
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/forgejo"
+
+      - "diun.enable=true"
+
+      - "telegraf.enabled=true"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MARIADB_USER=forgejo
+      - MARIADB_PASSWORD=${DB_PASSWORD}
+      - MARIADB_DATABASE=forgejo
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_bin"]
+    volumes:
+      - "${CONTAINER_DIR}/db:/var/lib/mysql"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+  backup:
+    image: ghcr.io/nfrastack/db-backup:5
+    restart: unless-stopped
+    depends_on: [db]
+    volumes:
+      - "${CONTAINER_DIR}/db-backup:/backup"
+    environment:
+      - TIMEZONE=UTC
+      - CONTAINER_ENABLE_MONITORING=FALSE
+      - DEFAULT_LOG_LEVEL=WARN
+
+      - DEFAULT_CREATE_LATEST_SYMLINK=TRUE
+      - BACKUP_JOB_CONCURRENCY=1
+      - DEFAULT_CHECKSUM=NONE
+      - DEFAULT_COMPRESSION=NONE
+      - DEFAULT_BACKUP_INTERVAL=1440
+      - DEFAULT_BACKUP_BEGIN=0315
+      - DEFAULT_CLEANUP_TIME=10080
+
+      - DB01_TYPE=mariadb
+      - DB01_HOST=db
+      - DB01_NAME=forgejo
+      - DB01_USER=root
+      - DB01_PASS=${DB_ROOT_PASSWORD}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "backup.enable=true"
+      - "backup.password=$RESTIC_PASSWORD"
+      - "backup.volumes=${CONTAINER_DIR}/db-backup"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "512k"
+        max-file: "1"
+
+networks:
+  traefik:
+    external: true

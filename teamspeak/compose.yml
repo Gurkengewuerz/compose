@@ -47,7 +47,7 @@ services:
         max-file: "1"
 
   backup:
-    image: tiredofit/db-backup:4.0.19
+    image: ghcr.io/nfrastack/db-backup:5
     restart: unless-stopped
     depends_on: [db]
     volumes:
@@ -71,6 +71,7 @@ services:
       - DB01_USER=root
       - DB01_PASS=$DB_ROOT_PASSWORD
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/db-backup"

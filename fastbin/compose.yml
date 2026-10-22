@@ -1,6 +1,6 @@
 services:
   fastbin-rewritten:
-    image: ghcr.io/gurkengewuerz/fastbin-rewritten:latest
+    image: ghcr.io/gurkengewuerz/fastbin-rewritten:main
     restart: unless-stopped
     networks: [traefik]
     volumes:

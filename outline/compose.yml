@@ -1,6 +1,6 @@
 services:
   outline:
-    image: outlinewiki/outline:0.80.2
+    image: outlinewiki/outline:1.9.2
     restart: unless-stopped
     networks: [default, traefik]
     depends_on: [db, redis]
@@ -65,7 +65,7 @@ services:
         max-file: "1"
 
   backup:
-    image: tiredofit/db-backup:4.0.19
+    image: ghcr.io/nfrastack/db-backup:5
     restart: unless-stopped
     depends_on: [db]
     volumes:
@@ -89,6 +89,7 @@ services:
       - DB01_USER=$POSTGRES_USER
       - DB01_PASS=$POSTGRES_PASSWORD
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
       - "backup.enable=true"
       - "backup.password=$RESTIC_PASSWORD"
       - "backup.volumes=${CONTAINER_DIR}/postgres/backup"
